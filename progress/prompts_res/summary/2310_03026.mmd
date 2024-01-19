@@ -1,0 +1,82 @@
+
+## abstract:
+The main objectives of this paper are to address challenges faced by existing learning-based autonomous driving systems, such as comprehending high-level information, generalizing to rare events, and providing interpretability. The researchers propose the use of Large Language Models (LLMs) as decision-making components for complex autonomous driving scenarios that require human commonsense understanding.
+
+To enable comprehensive reasoning with LLMs, the researchers devise cognitive pathways and develop algorithms for translating LLM decisions into actionable driving commands. They integrate LLM decisions with low-level controllers using guided parameter matrix adaptation.
+
+The research findings show that the proposed method consistently outperforms baseline approaches in single-vehicle tasks and helps handle complex driving behaviors, including multi-vehicle coordination, due to the commonsense reasoning capabilities of LLMs.
+
+This paper is presented as an initial step towards leveraging LLMs as effective decision-makers for intricate autonomous driving scenarios, emphasizing safety, efficiency, generalizability, and interoperability. The researchers hope that their work will inspire future research in this field.
+## intro:
+The main motivation of the authors is to address the challenges faced by existing advanced learning-based Autonomous Driving (AD) systems. These challenges include the reliance on complex rule designs, the long-tail problem caused by limited datasets, sampling inefficiency, and the lack of interpretability. The authors propose using Large Language Models (LLMs) to equip AD systems with human-like thinking and reasoning capabilities. LLMs can analyze and reason about various driving scenarios, provide high-level decisions, and guide the bottom-level controller. The authors demonstrate the superiority of their system through quantitative experiments, showing a significant decrease in Overall Cost compared to existing methods, and qualitative experiments, showcasing the system's capabilities in multi-vehicle control and driving behavior modulation guided by textual input. The main contributions of the paper are the development of a dedicated framework for LLMs in driving scenarios, techniques for directing the bottom-level controller using high-level textual decisions, and the demonstration of the system's performance superiority and success in complex tasks.
+## related work:
+Previous research in the field of self-driving autonomy has explored two primary paradigms: modular and end-to-end approaches. The modular approach involves a layered system of interconnected components responsible for different sub-tasks, while the end-to-end approach directly translates sensor inputs into planner or controller commands. Both paradigms have their advantages and challenges. Recent progress has been made in combining the strengths of these paradigms through end-to-end learnable pipeline autonomy.
+
+Large Language Models (LLMs) have also been extensively studied for advanced tasks. LLMs have demonstrated impressive performance in tasks such as zero-shot prompting, complex reasoning, embodied agent research, and addressing transportation problems. Language-to-actions mapping and language-to-code generation are critical tasks in leveraging LLMs for advanced tasks. LLMs have been used for instruction-following in navigation and manipulation tasks, as well as for assigning reward values during Reinforcement Learning (RL) training. Iterative human feedback has also been explored in correcting plans.
+
+While previous research has integrated LLMs into autonomous driving systems, this paper aims to develop an autonomous driving system where LLMs play a central role in high-level decision-making. The paper extends the application of LLMs to more intricate scenarios, such as navigating intersections and roundabouts, providing an initial step towards harnessing the advanced reasoning capabilities of LLMs for complex autonomous driving scenarios.
+## method:
+In the methods section of the paper, the authors describe the research methods and techniques used to develop an AD (Autonomous Driving) system with LLM (Language-driven Learning and Modeling) as the core of high-level decision-making. The main steps of data collection and analysis described in the methods section are as follows:
+
+1. Dialogue and Information Gathering: The LLM initiates a dialogue based on the provided prompt and continuously gathers information from the environment.
+
+2. Reasoning and Judgments: The LLM engages in reasoning based on the gathered information and renders high-level judgments.
+
+3. High-Level Textual Decisions: The LLM sequentially identifies the vehicles requiring attention, evaluates the situation, and offers action guidance.
+
+4. Mathematical Representations: The three high-level textual decisions are transformed into mathematical representations, namely the observation matrix, weight matrix, and action bias. These representations serve as directives for the bottom-level controller, the MPC (Model Predictive Controller).
+
+5. Conversion to MPC Format: Taking the example of a left turn at an intersection, the three high-level textual decisions are converted into the mathematical representations needed for the MPC. The observation matrix is adjusted to focus solely on the selected vehicle. The weight matrix is adjusted to prioritize deceleration instructions over trajectory following. The LLM's action guidance is directly converted into action bias through predefined rules.
+
+6. Driving Action: Guided by the mathematical representations, the MPC completes the driving action of stopping and yielding.
+
+Overall, the methods described in the section involve the use of LLM for high-level decision-making, transforming textual decisions into mathematical representations, and utilizing the MPC for driving actions based on these representations.
+## ### Background:
+The section titled "Background" provides an overview of the Model Predictive Control (MPC) and its cost function in the context of a Markov Decision Process (MDP) used for vehicle control problems. The MPC solves an optimization problem based on current measurement information and applies the resulting control sequence with the lowest cost to the controlled vehicle. The cost function is defined as a sum of weighted residual terms, where the weights and residual terms are designed to achieve desired control behaviors. The section also mentions the use of LLM (Learning from LiDAR Map) for high-level decision-making, with Figure 2 illustrating the system pipeline and the conversion of textual high-level decisions into mathematical representations to guide the MPC.
+## ### Chain-of-thought:
+The section titled "Chain-of-thought" discusses the use of LangChain as a framework to manage the LLM (Language Model) and establish a structured thought process. LangChain defines a set of tools and specifies their sequence of utilization. The designated tools are introduced at the beginning of the conversation, and the LLM actively utilizes them to acquire relevant information and guidance for decision-making. The LLM follows these guidelines to determine its next action until it solves the entire problem. The section also presents an illustrative example of three core tools that provide the LLM with information and reasoning guidelines for specific steps and direct its actions. Additionally, the tools help in delivering scenario information in a more organized manner, providing only the necessary details for each decision step. This strategic shift improves the LLM's ability to reason and exercise judgment.
+## ### Attention Allocation:
+The section titled "Attention Allocation" discusses the process of effectively distributing attention while driving. The LLM (Long-term Memory) is tasked with assessing information about surrounding vehicles one at a time. The objective is to determine the intentions of these vehicles and identify any potential conflicts with the ego vehicle's movements. The LLM uses information from previous time steps and the current environment to determine the intention of each surrounding vehicle. Based on this information, the LLM determines whether a vehicle is of concern or not. An observation matrix is then created for the Model Predictive Control (MPC) system, which focuses only on the vehicles identified by the LLM. This ensures that the MPC system prioritizes these selected vehicles.
+## ### Situation Awareness and Action Guidance:
+In this section, the paper discusses the importance of situation awareness in decision-making processes. The LLM (Learning Latent Model) is responsible for selecting a specific situation from a set of options based on information gathered and reasoned judgments. The information associated with each situation is characterized by a feature, and the chosen situation serves to tune the weight matrix of the MPC (Model Predictive Control). The LLM provides guidance on acceleration and steering based on the chosen situation, and the vehicle's actions are adjusted to align with this guidance. The paper also mentions that the predefined situations are abstract and broad enough to cover a wide range of driving scenarios. The effectiveness of this approach is validated through experimental testing.
+## ### Multi-vehicle Joint Control:
+The section titled "Multi-vehicle Joint Control" discusses the importance of multi-vehicle joint control in improving transportation efficiency and safety. The section mentions that both centralized and distributed approaches often struggle when the traffic model is unknown. To address this issue, the authors propose a solution where each vehicle is individually controlled by a distributed LLM (Low-Level Module), with one central LLM acting as the "brain" of the fleet for communication and coordination. The central LLM receives reports from the distributed LLMs and uses the environmental information to give coordination commands.
+
+The section also includes a table that presents the evaluation results for single-vehicle decision-making in different scenarios such as signalized intersections, unsignalized intersections, driveways, emergency avoidance, and roundabouts. The evaluation compares the performance of three approaches: Reinforcement Learning-Based Planning (RL), Model Predictive Control (MPC), and the authors' proposed approach (LLM+MPC). The metrics used for evaluation are collision, failure, inefficiency, time, penalty accuracy, and penalty distance. The authors' approach consistently outperforms the other two approaches across the different scenarios, demonstrating its effectiveness.
+
+The section further mentions that the authors' approach was tested in both single-vehicle decision-making and multi-vehicle joint control tasks. The scenario maps and traffic flows were generated using IdSim. The evaluation of the approach in single-vehicle decision-making involved testing it in various complex scenarios, and the results showed its superior performance compared to RL and MPC. The authors also demonstrated the potential of their system in driving behavior modulation guided by textual input.
+
+In the realm of multi-vehicle joint control, the capabilities of the authors' method were tested in intricate gaming scenarios, including challenging situations like narrow lane meetings. These tests showcased the adaptability and effectiveness of the approach in complex environments.
+## ### Single-vehicle Decision-making:
+The section titled "Single-vehicle Decision-making" discusses the quantitative results of the decision-making process for a single vehicle. The system achieves cost reductions and improved driving behavior, resulting in minimal failures and no collisions in non-emergency situations. In emergency scenarios, the system effectively reduces the accident rate, indicating its effectiveness in obstacle avoidance.
+
+The section also discusses the system's performance in specific scenarios such as intersections, roundabouts, and lanes. In intersections, the system focuses on left-turn situations, where the ego vehicle needs to yield to other vehicles. Although this may increase the elapsed time, it improves traffic flow efficiency and reduces safety penalties. In lanes, the system excels in overtaking and lane changes. In emergency situations, the system demonstrates its effectiveness in reducing accidents and improving overall performance.
+
+The section also highlights the attention allocation capability of the system, using an example of an unsignalized intersection where the system accurately comprehends the intentions of other vehicles and makes informed decisions about allocating attention. This leads to more efficient and rational driving behavior.
+
+Furthermore, the section discusses the situation awareness and action guidance of the system. It compares the system's approach, which considers traffic regulations and makes reasoned choices, with learning-based approaches that may struggle to grasp high-level information. The system's approach showcases the capacity of its reasoning module to accurately comprehend the situation and make informed decisions.
+
+Lastly, the section briefly mentions the coordination within a convoy. The system combines centralized and distributed methodologies, with a central reasoning module coordinating the convoy and distributed modules managing individual vehicles based on the convoy-level decisions.
+## ### Text-modulated Driving Behavior:
+The assigned section of the paper discusses the concept of text-modulated driving behavior. The researchers aim to allow users to customize the driving behavior of autonomous driving (AD) systems according to their preferences, using text descriptions as input.
+
+The section first highlights the complexity of achieving intuitive and reliable customization in learning-based or optimization-based AD systems, which usually require complex rule or reward function designs. In contrast, the researchers propose a simpler approach that uses textual descriptions to guide the AD system, which can easily comprehend the user's abstract and non-intuitive requirements. The researchers provide an example demonstrating how the system can adjust driving behavior based on textual instructions, such as driving aggressively or conservatively.
+
+The section also addresses the challenge of handling complex transportation scenarios, such as road construction, which can be difficult for many AD systems. To overcome this, the approach enables users or utilizes high-precision maps to provide textual instructions that guide the AD system's decision-making. An experiment involving a road construction scenario is described, where the approach successfully recognized the situation and adjusted the driving behavior accordingly.
+
+Overall, the researchers propose a text-modulated approach that allows users to customize the driving behavior of AD systems through textual instructions, simplifying the customization process and effectively handling complex scenarios.
+## conclusion:
+The main conclusions and findings mentioned in the conclusion section of the paper are:
+
+1. LLMs can effectively serve as the core high-level decision-making component of AD systems.
+2. The approach combining LLMs and MPC (Model Predictive Control) outperforms existing methods on key metrics and handles complex real-world driving scenarios.
+3. The reasoning skills and interpretability of LLMs help overcome the limitations of current learning-based AD systems regarding adaptability and transparency.
+4. LLMs have the potential to enable human-like performance in diverse driving scenarios.
+
+Based on these conclusions, the authors suggest further directions for research in the following areas:
+
+1. Developing safe, efficient, generalizable, and interpretable LLM-based AD systems.
+2. Exploring and improving the reasoning capabilities of LLMs to enhance their decision-making abilities.
+3. Investigating methods to ensure the reliability and robustness of LLM-based AD systems in various challenging driving scenarios.
+4. Exploring ways to integrate LLMs with other components of AD systems for improved performance and safety.
+5. Conducting studies to evaluate the real-world performance and impact of LLM-based AD systems.

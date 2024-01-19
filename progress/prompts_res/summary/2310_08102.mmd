@@ -1,0 +1,138 @@
+
+## abstract:
+The main objectives of the paper are to propose a new framework called Evaluation-guided Iterative Plan Extraction (EIPE-text) for long-form narrative text generation and to evaluate its effectiveness in generating coherent and relevant narratives. The research findings indicate that the EIPE-text framework, which includes plan extraction, learning, and inference stages, can generate better plans for narrative writing. The paper introduces a question-answer based evaluation mechanism to automatically evaluate and refine the extracted plans. The learning stage involves fine-tuning the planner using the plan corpus or learning with examples from the corpus. The evaluation results, including both GPT-4-based evaluations and human evaluations, show that the EIPE-text framework can generate more coherent and relevant long-form narratives. The code for the framework will be released in the future.
+## intro:
+The main motivation of the authors is to address the challenge of generating long-form narratives that maintain coherence and relevance. They note that while large language models have shown impressive performance in tasks like machine translation and summarization, generating long-form narratives remains challenging. Inspired by human writers who use plans or outlines to maintain coherence, the authors propose a hierarchical generation approach called the Evaluation-Guided Iterative Plan Extraction for Long-Form Narrative Text Generation (EIPE-text) framework. This framework leverages a learned planner with enhanced domain expertise to generate high-quality plans for narrative text generation. The authors evaluate the effectiveness of EIPE-text in the domain of novels and storytelling and find that it outperforms current state-of-the-art models in terms of coherence and relevance. Their contributions include proposing the EIPE-text framework, introducing a QA-based evaluation method for plan evaluation and improvement, and demonstrating the effectiveness of their model in the novel and storytelling domains. They also plan to release the code for future research.
+## method:
+The research methods and techniques applied in the methods section of this paper include plan extraction, learning, and inference. 
+
+The main steps of data collection and analysis described in the methods section are as follows:
+
+1. Plan Extraction: Plans are extracted from each narrative within the corpus. This involves plan sketching, QA-pairs generation, QA-based evaluation, and plan refinement. A tree-structured plan is initially generated using an LLM in the plan sketching step. Next, a set of QA-pairs is generated, with each pair corresponding to a distinct part within the source narrative. These QA-pairs serve as an evaluation metric for the plan. The plan is evaluated through question answering, and refinement instructions are generated for modifying the plan based on incorrect QA-pairs. The plan is iteratively improved based on the instructions until it passes the evaluation.
+
+2. Learning: The plan extracted in the first stage is leveraged to train an LLM planner. Two strategies, finetuning, and in-context learning, are utilized to generate high-quality plans for the given topic.
+
+3. Inference: The inference stage consists of plan generation and narrative generation. The planner takes the topic as input and generates a corresponding plan. The narrative is then generated from the plan, seamlessly integrating the content outlined in the plan.
+
+These steps are described in detail in the methods section of the paper. The paper also discusses the effectiveness of the framework and provides a case study to exemplify its performance.
+## experiment:
+The main experimental techniques or procedures employed in the research were as follows:
+
+1. Plan Extraction Stage: Azure Openai GPT-4 was used as the experimental language model (LLM) to extract plans. The extracted plans were then utilized in conjunction with the k-means algorithm for clustering purposes.
+
+2. Inference Stage: The planner was used to generate a plan, which was then used to generate the narrative. The planner was based on recurrentGPT, with modifications described in the appendix.
+
+3. Novel Dataset: Data from Project American Literature, Writing Prompts, and other sources were used to create a training dataset of 1292 stories. A test set of 120 prompts from Writing Prompts was also collected, covering six genres.
+
+4. Setting: The EIPE-text (in-context) setting used text embeddings obtained from the plan corpus and the k-means algorithm for clustering. The EIPE-text (finetune) setting finetuned the LLM LLaMA using the plan corpus.
+
+5. Baselines: The recurrentGPT baseline was used, which is a language-based simulation of the recurrence mechanism in RNNs. The Re3 and DOC methods were not directly compared.
+
+6. Metric: The evaluation employed a pairwise comparison metric. The criteria for evaluation included "Interesting," "Coherent," and "Relevant." Evaluation was done through both human evaluation and automatic evaluation using GPT-4.
+
+7. Storytelling Dataset: TED Talks were used as the storytelling dataset, with 2468 talks in the training set and 130 talks in the testing set.
+
+8. Storytelling Setting: The EIPE-text (in-context) setting used text embeddings obtained from the plan corpus and the k-means algorithm for clustering. The EIPE-text (finetune) setting finetuned the LLM LLaMA-7B using the plan corpus.
+
+9. Storytelling Baselines: The baselines included the GPT4 raw planner and the LLaMA raw planner.
+
+10. Storytelling Metric: The evaluation criteria for storytelling included "Coherent," "Interesting," "Relevant," and "Inspiring."
+
+The results showed that EIPE-text outperformed the baselines in terms of coherence, relevance, and overall quality of the generated narrative in both novel and storytelling domains. The improvements were significant in both human and automatic evaluation.
+## ## 4 Analysis:
+Section 4 of the paper titled "Analysis" explores the key aspects of designing an effective planner and provides an experimental analysis of the plan refinement process. The section covers three main topics.
+
+The first topic is an ablative study of an in-context learning-based planner. The study investigates the impact of the demonstration selection algorithm and the number of demonstration examples on the planner's performance. The results show that using clustering to select more demonstrations leads to better results. The 20-shot cluster-based planner outperforms the 5-shot cluster-based planner, suggesting that using more demonstration examples improves planner performance. Additionally, the clustering-based method for selecting demonstration examples appears to be slightly more effective compared to retrieval-based methods.
+
+The second topic compares hierarchical generation with non-hierarchical methods in terms of narrative generation. The results show that hierarchical generation is more effective compared to non-hierarchical methods. The 0-shot planner, which generates a full narrative directly in one step, significantly outperforms the 0-shot without planner configuration. Similar trends can be observed in the 5-shot setting.
+
+The third topic explores the effectiveness of the plan refinement process. The paper examines the convergence and alignment of the refined plan through iterative refinement. The results demonstrate that the framework can converge quickly with an average of 2.98 epochs using self-refinement. The refinement process involves adding, modifying, and adjusting operations to ensure alignment between the plan and the original narrative.
+
+Finally, the section includes a case study of in-context learning-based plan generation. The study highlights the advantages of using in-context learning with plans, such as capturing finer details and conserving computational resources. An example of a 1-shot plan demonstrates the coherence and retention of salient features while effectively addressing the topic query.
+
+Overall, this section provides a comprehensive analysis of the design and effectiveness of the planner, demonstrating the impact of demonstration selection, narrative generation methods, plan refinement process, and the benefits of in-context learning.
+## related work:
+Previous research in long-form narrative text generation has explored various perspectives, including appending the generated prefix to the encoder, capturing sentence and discourse-level coherence, leveraging discrete variational Transformers for long-range coherence, and adopting the plan-and-write strategy. Additionally, there has been exploration of story planning systems and hierarchical story generation. The current state-of-the-art work, recurrentGPT, uses large language models (LLM) and simulates the Long Short-Term Memory mechanism. However, the results from these methods are not satisfactory. This paper builds upon the previous work by using LLM to automatically mine the plan and train a good planner, and by generating an explicit plan that can be easily provided for human review and modification, making human-AI co-writing easier.
+
+The paper also provides two tables: Table 6 presents iterative refinement metrics, showing the operations performed and the difference before and after the refinement. Table 5 presents an ablation study result, comparing different methods in terms of demonstration number, demonstration selection, and narrative generation method.
+
+In conclusion, the paper introduces EIPE-text as a significant advancement in long-form narrative text generation, addressing challenges in coherence and structure. It highlights the potential of using LLMs to generate high-quality narratives and assist human writers. Future research could explore further applications and extensions of EIPE-text to advance automated text generation.
+## limit:
+The limitations indicated in the paper are related to the research methodology. One limitation is that during the plan extraction stage, the generation of question-answer pairs and answering questions heavily relies on the reasoning capability of a specific model (such as GPT4 or Claude). As a result, this method can only generate optimal results on models with strong reasoning capabilities. For models with weaker reasoning capabilities, the refinement process may fail to converge.
+
+Another limitation mentioned in the paper is that the framework proposed is a data-driven approach, which means it does not necessarily improve out-of-distribution (OOD) performance.
+
+The authors suggest possible improvements or solutions for these limitations are not explicitly mentioned in the text.
+## ## Initialized Plan:
+The section titled "Initialized Plan: Pig Products in Daily Life" discusses the various products in daily life that contain pig parts. It begins with an introduction, highlighting the fact that the Netherlands has 16 million people and 12 million pigs, indicating the significance of pig usage in the country. The section then presents research on the different products that contain pig parts, categorizing them into various categories.
+
+In the bathroom items category, it mentions that soap contains fatty acids from pork bone fat, which contributes to the hardening and pearl-like effect of the soap. Shampoo, conditioner, anti-wrinkle cream, body lotion, and toothpaste also contain pig-derived ingredients.
+
+The food items category includes dough improver that contains proteins from pig hairs, low-fat butter with gelatin for texture, and various desserts like cheesecake, chocolate mousse, tiramisu, and vanilla pudding, which use gelatin for appearance.
+
+In the construction materials category, cellular concrete uses proteins from bones to make it lighter and fully reusable. Train brakes utilize bone ash.
+
+Household items like fine bone china use pig parts for translucency and strength. Pig parts are also used in paint for texture and glossiness, in sandpaper as bone glue, and in paintbrushes as pig hairs.
+
+Meat products like portion-controlled meat cuts contain fibrin from pig blood. Beverages like beer, wine, and fruit juice use gelatin for clarity.
+
+Other products mentioned include cigarettes with hemoglobin filters, injectable collagen for wrinkles, bullets, and heart valve implants. The section also mentions that renewable energy can be derived from unused pig parts.
+
+The section concludes by highlighting the importance of knowing the ingredients used in products and taking better care of raw materials and producers. It states that a total of 185 products have been found to contain pig parts.
+
+The four questions provided are related to specific details mentioned in the section, such as why soap contains fatty acids made from boiling pork bone fat, the purpose of using pig hemoglobin in cigarette filters, the purpose of using pig proteins in cellular concrete, and the reason why the director of the heart valve company did not want their product associated with pigs.
+
+The refinement instructions provided involve adding new level 5 nodes under specific level 4 nodes to provide more specific details, as well as changing the name of a level 4 node to better reflect the topic. The revised plan is presented as a figure, showing the detailed process of an iteration in the plan extraction stage.
+## # QASiNa: Religious Domain Question Answering using Sirah Nabawiyah:
+The assigned section titled "QASiNa: Religious Domain Question Answering using Sirah Nabawiyah" is authored by Muhammad Razif Rizqullah, Ayu Purwarianti, and Alham Fikri Aji. The authors are affiliated with the School of Electrical Engineering and Informatics at the Bandung Institute of Technology in Bandung, Indonesia, and the Mohamed bin Zayed University of Artificial Intelligence in Abu Dhabi, UAE.
+
+Unfortunately, no content from the section has been provided for summarization.
+## abstract:
+The main objectives of this paper are to evaluate the performance of Large Language Models (LLMs) in the religious domain, specifically in the Islamic religion, and to propose a new dataset called Question Answering Sirah Nabawiyah (QASiNa) compiled from Sirah Nabawiyah literatures in Indonesian language. 
+
+The research findings show that the XLM-R model performs the best on the QASiNa dataset, with an Exact Match (EM) score of 61.20, an F1-Score of 75.94, and a Substring Match score of 70.00. In comparison, Chat GPT-3.5 and GPT-4 versions returned lower EM and F1-Score scores with higher Substring Match scores. This indicates that Chat GPT tends to give excessive interpretations in its answers, which is not suitable for question answering tasks in the religious domain, especially for Islamic religion.
+## intro:
+The main motivation of the authors is to address the limitations in question answering methods specifically applied to the religious domain, particularly the Islamic religion. They highlight that Indonesia has the largest population of Islamic believers in the world and that the primary references for Muslims are the Holy Qur'an and the Sunnah from the Book of Hadith. They also mention that the Sirah Nabawiyah (Prophetic Biography) serves as an important reference for Muslims as well. The authors argue that existing question answering methods, such as rule-based approaches and extractive language models, have limitations when applied to specific domains like the Islamic religion. They propose conducting research to measure the performance of a Large Language Model (LLM) called Chat GPT compared to extractive language models in answering religious questions using a new dataset that includes information from the Indonesian Sirah Nabawiyah. The main outcomes of their research include the creation of a new dataset, the evaluation of extractive question answering using language models with transfer learning, and the evaluation of Chat GPT's performance in the religious domain.
+## related work:
+Previous research in the field of question answering has explored various methods such as rule-based, extractive, and generative approaches. Rule-based methods rely on predefined patterns to obtain answers, while extractive methods extract answers from a given context or passage. Generative methods, on the other hand, can provide answers with or without context based on the information they have been trained on.
+
+In the religious domain, there have been studies on question answering specifically related to Islam. Researchers have used resources such as the Holy Qur'an, Hadith literature, and websites to develop datasets and models for Islamic question answering. Some studies have also focused on historical literature and Sirah Nabawiyah (biography of Prophet Muhammad) in the Indonesian language. These studies have utilized methods like semantic annotation, search techniques, and answer candidate ranking.
+
+Transfer learning, which involves training a model on a larger dataset from a more general domain and then evaluating it on a more specific domain, has been widely used in question answering research. Language models such as BERT, RoBERTa, and IndoBERT have been employed in previous studies to effectively answer questions in specific domains.
+
+To address the limitations of data availability in the Sirah Nabawiyah, this paper proposes a new dataset and utilizes transfer learning techniques. Models like mBERT, XLM-R, and IndoBERT are trained using transfer learning from the Indonesian translation of SQuAD v2.0, enabling them to answer questions related to the Sirah Nabawiyah.
+## dataset:
+The data used in this study is the Question Answering Sirah Nabawiyah (QASiNa) dataset. The dataset was obtained through a multi-step process that involved data acquisition, context retrieval, question and answer generation, and dataset validation.
+
+In the data acquisition phase, the researchers searched for research literature on the Sirah Nabawiyah from various campus repositories, primarily from Islamic universities in Indonesia. The selected literature had to meet specific criteria, including being a valid and reliable source and publicly accessible. A total of 9 literature sources were obtained.
+
+In the context retrieval phase, contexts were selected from each literature source. Each context consisted of a complete story with multiple sentences and paragraphs, ranging in length from 500 to 2000 characters. A total of 66 contexts were chosen, covering a wide diversity of topics related to the Sirah Nabawiyah.
+
+For the question and answer generation phase, a generative model called Chat GPT-3.5 was used to generate initial question and answer pairs. 500 question and answer pairs were generated, but they were not considered valid data as they were generated by a machine. Thus, the data proceeded to the manual validation phase.
+
+The dataset validation phase involved employing domain experts to validate the context, question, and answer pairs generated by the machine. The experts had to meet specific criteria, including being Islamic believers, proficient in the Indonesian language, and having a comprehensive understanding of the context in Sirah Nabawiyah. The validation process included consistency testing of the expert's performance through cross-validation.
+
+After the validation process, a set of 500 context-question-answer pairs that had been validated by the experts was obtained. The final QASiNa dataset is a JSON array file containing 66 data based on context. Each context has attributes such as context_id, context, question_answers, and context_length. The context length ranges from a minimum of 713 to a maximum of 1999 characters, with a mean of 1629.5 and a median of 1689.5. Within each context, there are multiple question-answer pairs, categorized into five types: what, when, where, who, and how many.
+## ## IV Evaluation:
+In this section, the authors evaluate the dataset using the transfer learning approach with mBERT, XLM-R, and IndoBERT language models. The evaluation metrics used are Exact Match (EM), F1-Score, and Substring Match evaluation. The Substring Match evaluation is used to assess the interpretations made by Chat GPT, where a True value is assigned if the label is a substring of the generated answer.
+
+The language models mBERT, XLM-R, and IndoBERT are fine-tuned using tokenized context and question as input, with the label being the answer token position in the context. The training data used is from the Indonesian translation of SQuAD v2.0 (SQuAD-ID), and hyperparameters tuning is performed through grid search. The best fine-tuned model from each language model is selected based on the highest EM score.
+
+The fine-tuned models are evaluated using the SQuAD-ID test set and QASiNa dataset. Comparative testing is also conducted by randomly sampling 500 data from the SQuAD-ID test set. The results show that XLM-R outperforms the other models, achieving the highest EM score, F1-score, and Substring Match score on the QASiNa dataset. The F1-Score values are lower than the Substring Match values for all language models, indicating low interpretation performance by the models.
+
+The evaluation then proceeds to use XLM-R to evaluate the QASiNa dataset based on question types. The EM scores range from 55.00 for "when" questions to 65.49 for "who" questions. The difference in scores for each evaluation metric is not excessively high, suggesting good data for each question type.
+
+Next, the authors explore the use of Chat GPT for extractive question answering in the religious domain. Testing is conducted using Chat GPT-3.5 and GPT-4, and the results are compared with the performance of the evaluated language models. The evaluation shows that the EM and F1-score of Chat GPT are lower than the Substring Match score, indicating the presence of extraneous words in the generated answers. It is concluded that providing extractive instructions is not sufficient for Chat GPT to produce extractive answers, as the model tends to perform excessive interpretations, which is not desirable in the religious domain. Therefore, it is determined that the current versions of Chat GPT are not suitable for finding extractive answers related to the religious domain.
+## conclusion:
+The main conclusions and findings mentioned in the conclusion section of this paper are as follows:
+
+1. The authors created a new dataset called QASiNa, which focuses on the Sirah Nabawiyah domain in the Indonesian language.
+2. Three language models (mBERT, XLM-R, and IndoBERT) were evaluated using the transfer learning approach for language models. XLM-R was found to be the best model.
+3. The performance of Chat GPT-3.5 and GPT-4 was also evaluated, and it was concluded that although these models had a high Substring Match score, their EM and F1-scores were lower compared to XLM-R. Chat GPT tended to provide excessive interpretations even after the context of the question was provided.
+4. Research on question answering in the religious domain is relatively rare, and further attention is needed in this area, especially considering the strict rules about giving interpretations in the religious domain.
+5. Technological advancements are necessary to ensure the preservation of religious values, and further studies could include increasing the dataset size, analyzing variations of language models, and exploring methods to improve the ability of language models to answer religious questions (such as In Context Learning and context-based token filtering).
+6. The authors intend to make the QASiNa dataset publicly available to the research community.
+
+Based on these conclusions, the authors suggest several further directions for research, including expanding the dataset and variations of language models to be analyzed, investigating methods to enhance the ability of language models to answer religious questions, and making the QASiNa dataset accessible to the research community.
+## ## Acknowledgment:
+The section titled "Acknowledgment" expresses gratitude towards the Indonesia Endowment Fund for Education (LPDP) for providing funding for the research. The authors also thank the domain experts who assisted in validating the datasets.

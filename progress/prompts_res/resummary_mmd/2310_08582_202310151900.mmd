@@ -1,0 +1,28 @@
+# Tree-Planner: Efficient Close-loop Task Planning with Large Language Models
+
+## Abstract
+This paper presents Tree-Planner, a new approach for efficient close-loop task planning using Large Language Models (LLMs). The approach consists of three phases: plan sampling, action tree construction, and grounded deciding. The research findings demonstrate that Tree-Planner achieves state-of-the-art performance while significantly reducing token consumption and improving error correction. This approach opens up opportunities for large-scale testing and applications.
+
+## Introduction
+The authors introduce the motivation for their research, which is to address the token and correction inefficiencies in the existing iterative-planner approach for task planning using LLMs. They propose Tree-Planner as a more efficient alternative, dividing the queries to an LLM into plan sampling and grounded deciding phases. They demonstrate the effectiveness of Tree-Planner in the VirtualHome environment, achieving state-of-the-art results and showing improvements in token and correction efficiency. The authors also conduct formal verification, ablation studies, and error analysis to further evaluate and improve the proposed model.
+
+## Preliminary
+This section provides an overview of Task and Motion Planning (TAMP), categorizing it into closed-loop and open-loop task planning. The authors focus on closed-loop task planning as it is more suitable for dynamic and complex environments. They formulate the closed-loop task planning problem as a partially observable Markov decision process (POMDP), which includes sets of states, observations, and actions. The authors emphasize that the optimal policy must consider not only the current observation but also the entire history of actions.
+
+## Model
+The authors propose Tree-Planner, a theoretical model that integrates LLMs into task planning by using plan sampling to extract commonsense knowledge from LLMs. The process involves generating a set of plan candidates through plan sampling, constructing an action tree to represent the shared and differing actions of the plans, and using grounded deciding to make decisions based on real-time environmental information. The authors chose this approach for its ability to encode commonsense knowledge, reduce token consumption, and improve error correction.
+
+## Results
+The main results of the research show that Tree-Planner outperforms baseline systems, achieving improvements in executability, goal conditions recall, and success rate. It also demonstrates significant advantages in token efficiency, reducing token cost compared to other methods. Additionally, Tree-Planner shows high correction efficiency, resulting in a decrease in the number of action-retry times. The research also compares Tree-Planner to other models and discusses the impact of hyperparameters.
+
+## Analysis
+This section provides a detailed analysis of token efficiency, plan sampling, grounded deciding, and error analysis. It compares the token consumption of Tree-Planner and iterative-planner, discusses the upper limits and effectiveness of plan sampling, investigates the effectiveness of grounded deciding, and analyzes error types and potential improvements.
+
+## Related Work
+The paper discusses previous research in task planning, categorizing it into search-based and generate-based methods. It mentions various studies that focus on generating plans iteratively, using implicit representations of LLMs, or leveraging LLMs as world models. The paper highlights the unique aspects of Tree-Planner, such as its tree-based modeling, fine-grained action selection, and efficient inference.
+
+## Conclusion
+The conclusion section summarizes the main findings of the research, highlighting the effectiveness of Tree-Planner in addressing the inefficiencies of existing task planning paradigms. It emphasizes the high performance, token efficiency, and error correction capabilities of Tree-Planner. The authors suggest further research and development of more efficient task-planning methods inspired by Tree-Planner.
+
+## Acknowledgements
+The paper acknowledges Tianbao Xie for providing helpful feedback on the work.

@@ -1,0 +1,203 @@
+# From Large Language Models to Knowledge Graphs for Biomarker Discovery in Cancer
+
+Md. Rezault Karim
+
+Corresponding author: rezaul.karim@rwth-aachen.de. This paper has been accepted in the "Technical, Socio-Economic, and Ethical Aspects of AI" research track of the 57th Hawaii International Conference on System Sciences (HICSS'2024).
+
+Lina Molinas Comet
+
+Department of Data Science and Artificial Intelligence, Fraunhofer FIT, Germany
+
+Md Shajiala
+
+Dietrich Rebholz-Schuhmann
+
+Stefan Decker
+
+###### Abstract
+
+Domain experts often rely on up-to-date knowledge for apprehending and disseminating specific biological processes that help them design strategies to develop prevention and therapeutic decision-making. A challenging scenario for artificial intelligence (AI) is using biomedical data (e.g., texts, imaging, omics, and clinical) to provide diagnosis and treatment recommendations for cancerous conditions. Data and knowledge about cancer, drugs, genes, proteins, and their mechanism is spread across structured (knowledge bases (KBs)) and unstructured (e.g., scientific articles) sources. A large-scale knowledge graph (KG) can be constructed by integrating these data, followed by extracting facts about semantically interrelated entities and relations. Such KGs not only allow exploration and question answering (QA) but also allow domain experts to deduce new knowledge. However, exploring and querying large-scale KGs is tedious for non-domain users due to a lack of understanding of the underlying data assets and semantic technologies. In this paper, we develop a domain KG to leverage cancer-specific biomarker discovery and interactive QA. For this, a domain ontology called OncoNet Ontology (ONQ) is developed to enable semantic reasoning for validating gene-disease relations. The KG is then enriched by harmonizing the ONO, controlled vocabularies, and additional biomedical concepts from scientific articles by employing BioBERT- and SciBERT-based information extraction (IE) methods. Further, since the biomedical domain is evolving, where new findings often replace old ones, without employing up-to-date findings, there is a high chance an AI system exhibits concept drift while providing diagnosis and treatment. Therefore, we finetuned the KG using large language models (LLMs) based on more recent articles and KBs that might not have been seen by the named entity recognition models.
+
+Bioinformatics, Ontology, Knowledge graphs, Machine learning, Large language models. 1
+
+## Introduction
+
+A challenging scenario for AI is providing improved diagnosis and treatment for cancerous conditions [2, 20]. With more than 200 different types identified, cancer is the second leading cause of death worldwide. Therefore, early detection and diagnosis, personalized interventions, and identifying biomarkers and therapeutic targets are of utmost importance in cancer [2]. Cancer is characterized as a heterogeneous disease, having many types and subtypes. It is caused when cells turn abnormal, divide rapidly, and spread to other tissues and organs and may be further driven by a series of genetic mutations of genes induced by selection pressures of carcinogenesis in the cells. Further, the so-called marker genes including oncogenes and tumor suppressor genes are often responsible for cancer growth.
+
+Machine learning (ML) techniques are widely used for the analysis of multimodal data (e.g., multi-omics, texts, imaging, disease progression, etc.). Clinical data can also be combined into and analyzed using ML models [14]. Further, cancer research requires datasets often generated from omics technologies and electronic health records. Domain experts often need to rely on up-to-date findings from a vast array of knowledge about drugs, genes, protein, and their mechanisms that are spread across structured (knowledge bases (KBs)) and unstructured data sources [12]. Scientific literature is a huge source of unstructured sources of biological entities. However, since these data1 are mostly unstructured, it makes the knowledge extraction overly challenging, e.g., these data exhibit unique challenges arising from heterogeneity and complexity. As heterogeneous data sources often do not follow data representation standards, integrating them into a common standard is another challenge [7]. An information extraction (IE) method can recognize named entities classified as diseases or genetic from such unstructured data sources. IE in natural language processing (NLP) involves _named entity recognition_ (NER), _relation extraction_ (RE), and _entity linking_ (EL).
+
+Footnote 1: For example, PubMed contains millions of articles [24].
+
+Another challenge is semantic heterogeneity, which is further compounded by the flexibility of semi-structured data and various tagging methods applied. Semantic Web (SW) technologies address data variety, by proposingmodel, to which data can be mapped in a graph structure called knowledge graphs (KGs). Nodes in a KG represent entities and edges represent binary relations between those entities [8]. A KG can be defined as \(G=\{E,R,T\}\), where \(G\) is a labelled and directed multi-graph, and \(E,R,T\) are the sets of entities, relations, and triples, respectively and a triple can be represented as \((u,e,v)\in T\), where \(u\in E\) is the head node, \(v\in E\) is the tail node, and \(e\in R\) is the edge connecting \(u\) and \(v\)[8]. Another common way to represent extracted facts in Resource Description Framework (RDF) format, where the linking structure of a KG forms a directed graph and triples are represented in the form of \((u,e,v)\) or \((subject,predicate,object)\). Facts containing these statements like _"TP53 is an oncogene"_ or quantified statements _"onogenes are responsible for cancer"_ can be extracted from structured and unstructured sources and be integrated into a KG. A domain ontology is an important element for KG. Ontologies (containing axioms or rules) and KBs that are increasingly adopted to address these challenges have great potential to support multidisciplinary cancer research [8]. Further, ontology-based NER and disambiguation help with the unambiguous identification of entities in heterogeneous data and the assertion of applicable named relationships that connect them. Moreover, ontology-based approaches for clinical decision support are getting wider adoption in the biomedical domain due to their explainability and reasoning capabilities [12].
+
+Although reasoning over domain KGs enables consistency checking to recognize conflicting facts and deductive inferencing by revealing implicit knowledge from a set of facts [5], exploration, processing, and analyzing large-scale KGs is challenging. In this paper, we develop a domain KG biomarker discovery in cancer. We construct a domain ontology called OncoNet Ontology (ONO). The KG is enriched by harmonizing the ONO and by extracting facts about concepts from scientific articles. Further, since the biomedical domain is evolving, where new findings often replace old ones, without using up-to-date domain knowledge there is a high chance an AI system exhibits concept drift. Therefore, it is important to validate the extracted facts with up-to-date domain knowledge (e.g., domain experts). We finetuned the KG using large language models (LLMs) based on more recent articles, and the ontology.
+
+### Related work
+
+Life sciences is one of the earliest adaptors of SW technologies [12]. Research initiatives in this area thus gradually employ semantic technologies such as KBs and domain-specific ontologies to build structured networks of interconnected knowledge [5]. Subsequently, numerous research efforts from the scientific communities have focused on extracting semantic knowledge from diverse structured and unstructured data about cancer, followed by constructing large-scale KGs, by either manual annotation, crowd-sourcing (e.g., DBpedia) or automatic extraction from unstructured data (e.g., YAGO) [23] targeting specific use cases. The Bio2RDF and PubMed KGs [24] are two prominent KGs developed to accelerate bioinformatics research. Research efforts constantly expanding and evolving with more and more biomedical data. Another biomedical KG is built [1] by harmonizing gene ontology (GO), human phenotype ontology (HPO), and disease ontology (DO). Representation learning is then applied by combining symbolic logic and automated reasoning to generate node embeddings that are used for downstream tasks, e.g., link prediction, finding candidate genes of diseases, and protein-protein interactions.
+
+Another example is the prototype KG [7], which is based on Louisiana Tumor Registry2. It provides scenario-specific querying, schema evolution for iterative analysis, and data visualization. Since this KG is built on a limited data setting, it does not contain comprehensive knowledge and facts about most cancer types. A large-scale breast cancer (BRCA) KG is developed [9] by integrating: i) Dutch medical guidelines3 that contain conclusions and their evidence with UMLS and SNOMED CT medical terminologies, ii) genomic data of female patients, iii) clinical trials from official NCT website, iv) semantic annotations w.r.t eligibility criteria generated with XMedLan4, and iv) selected medical publications from PubMed released by the Linked Life Data5.
+
+Footnote 2: [https://github.nlubc.edu/louisiana-tumor-registry/](https://github.nlubc.edu/louisiana-tumor-registry/)
+
+Footnote 3: A semantic representation of Dutch medical guidelines.
+
+Footnote 4:
+
+Footnote 5: An NLP tool for biomedical texts.
+
+Although these KGs are suitable for the exploration of the relation between knowledge and data sources about BRCA types, no comprehensive KGs have been developed targeting multiple cancer types to date. Further, the adoption of data-driven approaches has been hampered in many clinical settings by the lack of scalable computational methods (e.g., models, KGs) that can deal with large-scale data that are heterogeneous, high dimensional, unstructured, and having high levels of uncertainty to perform in a reliable manner [16]. Since the quality and consistency of the extracted facts in a KG are subject to the accuracy of the NER and RE, a domain expert requires reliable and up-to-date information. Further, since AI has become more widespread, the need for transparency of AI decisions has grown for ethical, legal, and safety reasons. This is more critical in healthcare, where AI may impact human lives [12]. Thus, there are many considerations for making AI-enabled healthcare applications more trustworthy [21]. The field of explainable artificial intelligence (XAI) aims to make AI systems more transparent and understandable to humans [12]. An interpretable ML model can reveal the factors that impact its outcomes. Model-specific and model-agnostic interpretable ML approaches have emerged [10].
+
+Querying or IE from structured data is straightforward, while the same from unstructured data may be highly domain-specific and require efficient NLP methods. A concrete example is some selected cancer-specific biomarkers, e.g., some genes have both oncogenic and tumour-suppressor functionality called proto-oncogenes with tumour-suppressor function (POTSF) [18]. The majority of POTSF genes act as transcription factors or kinases and exhibit dual biological functions, e.g., both positively and negatively regulate transcription in cancer cells. Besides, specific cancer types like leukaemia are over-represented by POTSF genes, whereas some common cancer types like lung cancer are under-represented by them [18]. Another type of gene called proto-oncogenes is a group of genes that cause normal cells to cancerous when they are mutated. Oncogenes result from the activation of proto-oncogenes, whereas a POSTF itself cause cancer when they are inactivated, e.g., TP53 is a POTSF and abnormalities of TP53 have been found in more than half of human cancers. Mutations in proto-oncogenes are dominant and a mutated version of a proto-oncogene is called an oncogene.
+
+Recently, transformer language models (TLMs) have become the de facto standard for representation learning in NLP. BERT [4] utilizes a bidirectional attention mechanism and large-scale unsupervised corpora to obtain context-sensitive representations of words [25]. Further, transformers are em ployed to predict entity labels from general texts [19] as well as scientific texts (e.g., SciBERT [3]), where word representations are obtained from a pre-trained BERT model. BioBERT [15] is another variant of BERT that significantly outperforms DNN-based methods for bio-entity extraction. Compared to transformers that benefit from abundant knowledge from pre-training and strong feature extraction capability, traditional conditional random field (CRF) or neural networks (DNNs)-based approaches such as Bidirectional Long Short Term Memory (Bi-LSTM) or Gated Recurrent Unit (GRU) cells have a lower generalization performance [25]. These make TLMs of great potential for a variety of downstream NLP tasks.
+
+Large language models (LLMs) such as GPT-4, LaMDA, and PaLM are expensive to train or fine-tune. LLMs pre-trained on large corpora inherently learn knowledge from a large text corpus during their pre-training plus open domain knowledge or new text provided through the prompts. Pre-trained LLM models calculate the probability of a sequence of words in a text, \(T=(w_{1},w_{2},\ldots,w_{L})\) is formulated as \(p(T)=p\left(w_{1}\right)p\left(w_{2}\mid w_{1}\right)\ldots p\left(w_{L}\mid w _{1},w_{2},\ldots,w_{L-1}\right)\), where \(L\) is the input length [22].
+
+## Methods
+
+First, we construct our ONO ontology, which is then used to enrich the KG along with additional controlled vocabularies and facts from scientific articles. Then, we construct the KG by integrating cancer-related knowledge from different sources. Finally, we use LLMs to fine-tune the KG, as shown in fig. 2.
+
+### Ontology modelling
+
+The ONO is developed by reusing existing ontologies containing annotations about diseases, genes, concepts, and biological processes. We consider Cancer, Biomarker, and Feature classes as basis (controlled vocabularies6 and facts7) for ONO:
+
+Footnote 6: Concepts and their relations.
+
+Footnote 7: Pactual knowledge from the literature.
+
+* [noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+* **ono:Cancer class is a conceptual umbrella term that contains 33 cancer types. Entities are either biological or cancer-specific domain terms.**
+* **ono:Biomarker class is a conceptual umbrella term that contains 660 genes that are responsible for different types of cancer (ref. **ono:Cancer class**). A gene may be responsible for single or multiple types of cancer, e.g., TP53 is responsible for breast (BRCA), ovarian (OV), medulloblastoma (MED), and prostate (PRAD) cancer. For _geneType_, 'Oncogene', 'Protein-coding', 'POTFS' are possible types; for _evidenceType_, 'PubMed', 'MeSH', 'CancerIndex' are possible sources; for _hasSignificance_ a gene can have one of 'HIGH', 'MEDIUM', 'LOW' levels of significance; _cross-Responsibility_ can have one or more than one of 'ACC', 'BLCA', 'BRCA', 'CESC', 'CHOL', 'COAD', 'DLDEC', 'ESCA', 'GBM', 'HNSC', 'KICH', 'KIRC', 'KIRP', 'LAML', 'LGG', 'LIHC', 'LUAD', 'LUSC', 'MESO', 'OV', 'PAAD', 'PCPG', 'PRAD', 'READ', 'SARC', 'SKCM', 'STAD', 'TGCT', 'THCA', 'THYM', 'UCEC', 'UCS', 'UVM' 33-cancer types; for _hasCitations_, there is at least 1 article indexed in 'PubMed', 'MeSH', 'CancerIndex'.
+* **ono:Feature class characterizes additional information about the genes (defined in **ono:Biomarker class**) such as biomarker types (i.e., oncogenes, protein-coding, and POTSF), degree of significance w.r.t certain cancer types (i.e., high, medium, and low), and source of evidence (i.e., PubMed, CancerIndex, MeSH). For example, TP53 is highly significantly mutated in the breast (BRCA) and ovarian (OV) cancer types, significantly mutated in the prostate (PRAD) cancer type, and nearly significantly mutated in medulloblastoma (MED) cancer types. These
+
+Figure 1: A schematic overview for the construction of the knowledge graph [11]
+
+findings are evidently found in scientific articles cited in PubMed, CancerIndex, and MeSH.
+
+We used ontology of genes and genomes (OGG)8 and human disease ontology (DOID)9 to inherit metadata about entities concerning genes and genomes, and human diseases, respectively. Figure 3 shows how classes relate to each other via properties, while fig. 5 shows how a biomarker (e.g., TP53) is conceptualized via different classes. We inherit semantic concepts about entities (e.g., annotations and metadata) from GO, HPO, DO, breast cancer ontology (BCO), cancer genetics web, TumorPortal10, and cancer genetic website11. This reflects the structural aspects of the connection between biomarkers (e.g., oncogenes, POTSF, ProteinCoding) and cancer types (e.g. breast cancer).
+
+Footnote 8: [https://biggortal.bioontology.org/enologies/OGG](https://biggortal.bioontology.org/enologies/OGG)
+
+Footnote 9: [https://biggortal.bioontology.org/enologies/DOID](https://biggortal.bioontology.org/enologies/DOID)
+
+Footnote 10: www.tumorprortal.org
+
+Footnote 11: www.cancer-genetic.org/
+
+#### Instance mapping
+
+DO provides consistent and reusable descriptions of human disease terms, phenotype characteristics, and medical vocabulary disease concepts. DO semantically integrates disease and medical vocabularies via cross-mapping of DO terms from MeSH, ICD, NCI, SNOMED, and OMIM. Besides, DO provides integrated information from several data sources and analysis of the literature using data from PubMed and CancerIndex.org. Therefore, we map all protein identifiers to Entrez genes and are used to represent genes, proteins, and other biological entities from the DO. Biological entities and classes from biomedical ontologies are two distinct types of entities. Each instance \(f_{i}\) in the KG is assigned a unique IRI. Therefore, we treat biological entities like types of genes, proteins, and diseases as instances. Classes from DO are treated as instances. The general structure of the ontology is shown in fig. 5, depicting hierarchical relations between different classes and subclasses. Ontology-based annotations are expressed by asserting a relation between instances like a gene, cancer type, or an instance of a class12.
+
+Footnote 12: E.g., gene _AKT_1 has GO association GO:800006 by two axioms has@Microscitation(KHT1, f1) and instance@f(f1, 01:000006): AKT1 and \(f_{1}\) are instances, GO:8000006 in a class [http://pathof.org/bio.co/800006](http://pathof.org/bio.co/800006) in GO. has@Microscitation is an object property, and instanced is a drip-type property.
+
+#### Knowledge graph enrichment
+
+Annotations in the ONO are already rich enough to facilitate complex QA and reasoning. However, the ontology alone is not enough as it may contain incomplete knowledge. Therefore, additional facts (e.g., some genes exhibit both oncogenic and tumour-suppressor characteristics, e.g., BRCA1, CAMTA1, CBFA2T3, CDX2, CREB3L, CREBBP, DDB2, DNMT1, DNMT3A, ETV6, EZH2, FOXA1, FOXL2, FOXO1, FOXO3, FOXO4, FOXP1, FUS, IRF4, KLF4, KLF5, NCOAA4, NOTCH1, NOTCH2, NOTCH3, NPM1, NR4A3, PAX5, PML, PPARG, RB1, RUNX1, SMAD4, STAT3, TCF3, TCF7L2, TP53, TP63, TRIM24, WT, ZBTB16, BCR, CREk2, EPIA1, EPIHA3, EPIHA6, STAT3, DAP2K4, MAP3K4, MST1, NTRK3, PKKARI4, PRK6, SYK, AHHGFET12, BCL10, BRCA2, CBL, CDC73, CDH11, CDKN1B, DCC, DD3X+, DICER1, FAS, FAT1, GPC3, IDH1, IKZF2, LIFR, NF2, NUP98, PHF6, PTPN1, PTPN11, RHOA, RHOB, SH2B3, SLC9A3R1, SOCS1, SPOP, SUZ12, WHSC1L1 are POTSF genes [18]) from more recent articles need to be integrated.
+
+To mitigate concept drift and enrich the KG, cancer-specific articles are collected from PubMed, where only recent and highly cited articles are considered. Pre-processing involves tokenisation, part-of-speech tagging, stemming, dependency parsing, word disambiguation, and linking words. We employ BERT-based information extraction, where BioBERT and SciBERT are finetuned with recent articles. Our hypothesis is that in learning to recover masked tokens, these NER models form a representational topology of cancer-specific articles that will help outperform CRF and Bi-LSTM for NER, relationship extraction, and multi-type normalization.
+
+Figure 2: Fine-tuning and validation of the knowledge graph using LLMs
+
+_Named entity recognition_ bio-entity extraction module serves two tasks: i) NER that recognizes the named entities in PubMed abstracts based on BioBERT [15] and SciBERT [3] models, ii) EL to link extracted named entities, and iii) RE. NER is about recognizing domain-specific proper nouns in a biomedical corpus, e.g., for the sentence: The main proteins regulating cell-cycle are BAD and PNCa, which have downstream effects, proteins, cell-cycle, BAD, and PNCa are 4 proper nouns. Another example is TP53 and FAS are the top two POTSF genes in terms of the number of associated cancer types, which are associated with 34 and 15 cancer types, where a NER model is able to identify that TP53, FAS, POTSF genes and cancer are the named entities. Recent NER approaches extract such named entities based on learning frameworks that leverage lexical features such as POS tags, and dependency parse trees [8].
+
+BERT was originally pre-trained on English Wikipedia, news, and book corpus. Therefore, it requires fine-tuning on biomedical texts containing domain-specific proper nouns and terms. Inspired by the success of BioBERT and SciBERT at biomedical NER tasks [13], we fine-tuned them to perform NER. BioBERT and SciBERT are first initialized with a case-sensitive version of BERT, followed by fine-tuning them on PubMed Central full-text articles collected based on inclusion and exclusion criteria. While fine-tuning BioBERT and SciBERT, WordPiece tokenization is used in which any new words are represented by frequent sub-words. SciBERT and BioBERT extract different entity types, where an entity or two with frequently occurring token interaction is marked with more than one entity type span. Then, based on probability distribution, we choose the correct entity when they were tagged with more than two types w.r.t probability-based decision rules [13]. These two NER models can predict 7 tags: IOB, X, CLS, SEP, and PAD.
+
+_Entity linking and relation extraction_ for the entities present in the KG, we link given mentions to these nodes, involving entity disambiguation, e.g., multiple ways exist to mention the same entity (e.g., TP53 and Li-Fraumeni syndrome are anonymously used). Further, multi-type normalization is performed to assign unique IDs to extracted bio entities. For the RE, we consider both binary and n-ary relation types, in a closed-world setting between gene/protein and disease relation types. We utilize the sentence classifier of the BERT-case. BERT uses a [CLS] token for the relation classification. Similar to BioBERT-based RE, sentence classification is performed using a single output layer based on a [CLS] token representation from BERT. The target named entities in a sentence are anonymized using pre-defined @GENES and @DISEASE8.
+
+_Integrating extracted triples into KG_ possible sub-classes of _Significance_ is defined as HIGH, MEDIUM, and LOW based on the annotations provided in the TumorPortal13. Each entity belonging to the biomarker class is annotated with the properties from OGG ontology. Besides, the number of articles is included as evidence associated with certain genes. We included those 33 cancer types of interest in the Cancer class, which are labelled with their well-known abbreviations, e.g., BRCA for breast cancer. For the entities in the Cancer class, object properties from the DOID ontology are inherited. The _Feature_ class connects the disease and responsible genes. The significance
+
+Figure 3: Cancer, Biomarker, and Feature classes and their properties. Responsibility properties are shown as predicates, while dashed grey boxes signify properties of entities belonging to each class [11]
+
+degree of a particular gene is included w.r.t a disease. Besides, biomarker and evidence-type information are also included, where PubMed, MeSH, and CancerIndex are considered as the source of the evidence. These features are used to indicate the relation between entities from different classes, which in turn annotations allow the rules generation. Since the genes can be categorized as _Oncogene_, _ProteinCoding_, and _POTSF_, we considered these as the subclasses of _BiomarkerType_.
+
+Links between extracted lexical terms from the source text and the concepts from the ontology are defined. Then, the context of the terms is analyzed to determine appropriate disambiguation, before assigning them the correct concept. Finally, attribute-value pairs are identified, which involves the identification of a subject, mapping it to a semantic class, and using the predicate and object as the attribute name and value, respectively. We use a semantic lexicon to integrate new facts into our KG. Our BioBERT and SciBERT-based instance lexicon extractor uses rules from the ontology to enrich the instance information to create RDF triples, where each triple forms a connected component of a sentence, e.g., for input text, _"TP53 is responsible for a disease called Breast Cancer. TP53 has POTSF functionality, which is mentioned in numerous PubMed articles."_, _TP53_, disease, _Breast Cancer_, _POTSF_, and _PubMed_ are named entities. This yields following triples: (TP53, causes, Breast Cancer), (TP53, hasType, POTSF), (Breast Cancer, isA, Disease), (POTSF, hasEvidence, PubMed).
+
+### Fine-tuning KG with LLMs
+
+Assuming our KG may have potentially inconsistent or outdated facts, we use an LLM not only to extract up-to-date knowledge but also to identify such inconsistencies or incompleteness. We employ the instruction-tuning approach with supervised fine-tuning (SFT) [22]. Unlike training LLMs from scratch, we leverage their capabilities for IE with in-context learning in prompts. As shown in fig. 4, an LLM is provided with our ontology, the KG, and reference14 about very recent articles that may not have been used during the fine-tuning of BioBERT or SciBERT. Thus, our goal is to generate triples from the input texts guided by the ontology, followed by comparing them with existing triples in the KG. For a given input prompt \(I=w_{1:m}\), we instruct the ChatGPT model \(f_{\theta}\) to generate a response \(R=v_{1:n}\) by optimizing the likelihood \(f_{\theta}(R\mid I)=p_{\theta}\left(v_{1:n}\mid w_{1:m}\right)\)[22], where \(n\) and \(m\) are the lengths of response and input prompt, respectively. The response is then represented as RDF triples for our KG. Finally, we perform the automated validation of the facts via semantic reasoner.
+
+Footnote 14: The full-text corpora with guided URLs and prefixes.
+
+### Quality assessment of knowledge graph
+
+Regardless of the data sources, the initial KG will usually be incomplete and may contain duplicates, inconsistencies, or even incorrect statements - especially when a KG is constructed based on multiple sources [8]. Therefore, once the KG is constructed and enriched with additional facts from external sources, we follow another crucial step, which is the quality assessment of the facts in the KG to assess the fitness of the purpose w.r.t availability, completeness, conciseness, interlinking, performance, and relevancy dimensions, using SANSA-linked data quality assessment metrics [17].
+
+### Evaluation Results
+
+In this section, we report some experiment results.
+
+### Experiment setup
+
+Each _BERT_-based NER model is fine-tuned for 20 epochs (the training set is shuffled for each epoch, where the maximum input length is set to 256), where the Adam optimizer is used to optimize the loss with the scheduled learning rate (in which the initial learning rate is set to \(2e^{-5}\) with gradient clipping applied). Results produced through random search and 5-fold cross-validation tests are reported. To evaluate the effectiveness of domain-specific potentials of transformer-based approach for information extraction, a comparative analysis with the well-known CRF and Bi-LSTM architectures is provided. Further, some benchmark queries for selected questions are provided in human language (NLQ) and DLx query (DLQ) formats, where the DLx rules are generated using Pellet, ELK, and HermiT reasoners. Protege 5.5.0 is used for the reasoning, w.r.t DLx querying. However, we report the rules generated with Pellet reasoner only15. The inferred rules based on reasoning are expressed in DLx format. Finally, generated rules are interpreted, followed by decision reasoning with the rules.
+
+Figure 4: An example prompt to generate triples from the given text and ontology as input to ChatGPT
+
+### Analysis of information extraction
+
+With _exact-match evaluation_, a named entity is considered correctly recognized by the NER model only if both boundaries and type match the ground truth. To validate the knowledge extraction from scientific articles using BioBERT and SciBERT, the performance of the entity extraction is evaluated in terms of entity-level precision and recall. While precision measures the ability of a NER system to present only correct entities, recall measures the ability of the NER model to recognize all entities in our corpus. We report precision, recall, and F1 scores in table 1, with the best scores in bold and the second-best scores underlined. Since both high precision and high recall are desirable, an F1 score was not shown. Results for BERT and BiLSTM-CRF models are provided as two different baselines.
+
+BioBERT obtained the highest F1-score in recognizing Genes/Proteins and diseases, which is about 2% better than SciBERT. BioBERT significantly outperformed the BiLSTM-CRF model by 7.85% w.r.t F1-score. Being fine-tuned on domain-specific articles, SciBERT also outperformed the BiLSTM-CRF by 5.39% in terms of the F1-score, on average. BERT, which is pre-trained on general domain corpus was highly effective. On average, BioBERT and SciBERT outperformed BERT by 3.25% in terms of F1-score.
+
+### Using the knowledge graph
+
+Explanations serve as a bridge between humans and AI systems [6], where the AI itself could benefit from external knowledge to support domain experts in understanding why the algorithms came up with certain results. We foresee the benefits for both researchers (e.g., bioinformatician and SW researchers to leverage the interactive explanation via querying and question answering (QA) and medical doctors (e.g., oncologists can validate diagnosis decisions) based on explicit knowledge from the KG. For example, the answer to NLQ: "List of all biomarkers that are classified POTSF and responsible for breast cancer" for the DLQ "Biomarker and causes some BRCA and isA only POTSF". Since our KG can be viewed as discrete symbolic representations of knowledge, reasoning over it would leverage the symbolic technique16. These would help QA for NLQs, e.g., _"Which POTSF biomarker is highly responsible for breast Carcinoma and has PubMed evidence?"_, the semantic reasoner follows a logical reasoning path to reason about the concept _'unknown'_ and how it is related to other concepts.
+
+Footnote 16: Inference rules (IRs) are a straightforward way to provide automated access to deductive knowledge [8]. An HL encodes IF-THEN-style consequences: \(P=\mathcal{P}\), where body and head follow graph patterns in a KG.
+
+Suppose an ML model provides diagnosis decisions for a cancer patient by identifying statistically significant biomarkers based on SHAP [10]. However, it is not evident that those
+
+\begin{table}
+\begin{tabular}{l|c|c|c|c} \hline  & \multicolumn{2}{c|}{Entity extraction} & \multicolumn{2}{c}{Normalization} \\ \hline
+**Model** & **Precision** & **Recall** & **Precision** & **Recall** \\ \hline BiLSTM-CRF & 83.13\% & 82.19\% & 84.57\% & 83.29\% \\ \hline BERT & 87.25\% & 86.65\% & 88.34\% & 87.31\% \\ \hline SciBERT & 89.35\% & 88.55\% & 90.12\% & 89.37\% \\ \hline BioBERT & **91.36\%** & **90.75\%** & **91.32\%** & **91.43\%** \\ \hline \end{tabular}
+\end{table}
+Table 1: Performance of entity recognition and linking
+
+Figure 5: Properties of TP53 biomarker, showing how it is related to different types of cancer [11]biomarkers are biologically significant. The findings, however, can be validated based on facts presented in the KG. The integration of an ML model with a knowledge-based system would provide human operators with both reasoning, QA, and validating the predictions17. Assuming our KG is complete in the closed-world assumption, a doctor with their expertise and by combining the facts from KG could explain the decision with additional interpretation (e.g., biomarkers and their relevance w.r.t specific cancer types), as shown in fig. 7.
+
+Footnote 17: Neuro-symbolic AI that combines connectionist- and symbolic AI paradigms.
+
+## Conclusion
+
+In this paper, we constructed a domain KG that can leverage cancer-specific biomarker discovery and interactive QA over it, while our domain ONO enables semantic reasoning for the validation of gene-disease relations in symbolic contexts. To mitigate the concept drift, we fine-tuned the KG using LLMs based on more recent articles and KBs. Our approach suggests that LLMs indeed help extract new facts and knowledge from scientific literature and help keep the kG up-to-date.
+
+We would like to outline potential limitations of our approach that leave a lot of improvement possibilities: First, the expressiveness of DLx is not tested against incompleteness and inconsistency. Second, we could use the fully inferred, deductively closed KG to perform representation learning, e.g., embeddings of nodes and relations. Such KG embeddings on the deductively closed graph would have the advantage that not only asserted axioms will be taken into consideration, but representations can include inferred knowledge that is not present explicitly in KG [1]. Since the full potential of an AI system can only be exploited by integrating both domain- and human expertise [12], we envision developing a neuro-symbolic AI system similar to in fig. 7, by combining both connectionist- and symbolic AI paradigms not only to make knowledge acquisition and exploration but also reasoning and explainability.
+
+## Acknowledgments
+
+This paper is based on some concepts discussed in the PhD thesis [11] by the first author. The second author is funded by the Federal Ministry of Education and Research (BMBF) under grant no. 01IS22094E WEST-AI.
+
+## References
+
+* (1)
+* Alshahrani et al. (2017) Alshahrani M, Khan M. A, and Hoehndorf R (2017). Neuro-symbolic representation learning on biological knowledge graphs. _Bioinformatics_, **33**(17), 2723-2730.
+* Ballester (2021) Ballester P. J (2021). Artificial intelligence for the next generation of precision oncology. _NPJ Precision Oncology_, **5**(1), 1-3.
+* Beltagy and Cohan (2019) Beltagy I and Cohan A (2019). SciBERT: Pretrained Language Model for Scientific Text. In _EMNLP_.
+* Devlin and Lee (2018) Devlin J and Lee K. e. a (2018). BERT: Pre-training of deep bidirectional transformers for language understanding. _arXiv:1810.04805_.
+* Futia and Vetro (2020) Futia G and Vetro A (2020). On the integration of knowledge graphs into deep learning models for a more comprehensible ai--three challenges for future research. _Information_, **11**(2), 122.
+* Guidotti et al. (2018) Guidotti R, Monreale A, Ruggieri S, et al. (2018). A survey of methods for explaining black box models. _ACM computing surveys (CSUR)_, **51**(5), 1-42.
+* Hasan et al. (2020) Hasan S. S, Rivera D, Wu X.-C, et al. (2020). Knowledge graph-enabled cancer data analytics. _IEEE journal of biomedical and health informatics_, **24**(7), 1952-1967.
+* Hogan et al. (2021) Hogan A, Blomqvist E, Cochez M, et al. (2021). Knowledge graphs. _ACM Computing Surveys (Csur)_, **54**(4), 1-37.
+* Hu et al. (2015) Hu Q, Huang Z, and Gu J (2015). Semantic representation of evidence-based medical guidelines and its use cases. _Wuhan University Journal of Natural Sciences_, **20**(5), 397-404.
+* Huang et al. (2023) Huang W, Suominen H, Liu T, et al. (2023). Explainable discovery of disease biomarkers: The case of ovarian cancer
+
+Figure 6: Example of question answering to infer knowledge about named bio-entities [11]
+
+to illustrate the best practice in machine learning and shapley analysis. _Journal of Biomedical Informatics_, **141**, 104365.
+* Karim _et al._ [2022] Karim R, Beyan O, Rebholz-Schuhmann D, and Decker S (2022). Interpreting Black-box Machine Learning Models with Decision Rules and Knowledge Graph Reasoning.
+* Karim _et al._ [2023] Karim R, Islam T, Beyan, et al. (2023). Explainable AI for Bioinformatics: Methods, Tools, and Applications. _Briefings in Bioinformatics_.
+* Kim _et al._ [2019] Kim D, Lee J, Jeong M, et al. (2019). A neural named entity recognition and multi-type normalization tool for biomedical text mining. _IEEE Access_, **7**, 73729-73740.
+* Kitsios _et al._ [2023] Kitsios F, Kamariotou M, and Talisa M. A (2023). Recent advances of artificial intelligence in healthcare: A systematic literature review. _Applied Sciences_, **13**(13), 7479.
+* Lee _et al._ [2020] Lee J, Yoon W, Kim S, et al. (2020). BioBERT: A Pre-trained Biomedical Language Representation Model for Biomedical Text Mining. _Bioinformatics_, **36**(4), 1234-1240.
+* Phan and Wang [2016] Phan J. H and Wang M. D (2016). Integration of multimodal biomedical data to predict cancer grade and patient survival. In _IEEE-EMBS International Conference on Biomedical and Health Informatics (BHI)_, pages 577-580. IEEE.
+* Sejdiu _et al._ [2019] Sejdiu G, Rula A, Lehmann J, and Jabeen H (2019). A scalable framework for quality assessment of rdf datasets. In _International Semantic Web Conference_, pages 261-276. Springer.
+* Shen and Wang [2018] Shen L and Wang W (2018). Double agents: genes with both oncogenic and tumor-suppressor functions. _Oncogenesis_, **7**(3), 1-14.
+* Sun and Wang [2020] Sun C and Wang J (2020). Biomedical Named Entity Recognition using BERT in the Machine Reading Comprehension Framework. _arXiv:2009.01560_.
+* Tran _et al._ [2021] Tran K. A, Kondrashova O, Pearson J. V, and Waddell N (2021). Deep learning in cancer diagnosis, prognosis and treatment selection. _Genome Medicine_, **13**(1), 1-17.
+* Vollmer _et al._ [2020] Vollmer S, Mateen B. A, Bohner G, et al. (2020). Machine learning and artificial intelligence research for patient benefit: 20 critical questions on transparency, replicability, ethics, and effectiveness. _bmj_, **368**.
+* Wang _et al._ [2023] Wang G, Yang G, and Li X (2023). ClinicalGPT: Large Language Models Finetuned with Diverse Medical Data and Comprehensive Evaluation. _arXiv:2306.09968_.
+* Wang _et al._ [2015] Wang P, Wu Q, Shen C, and Dick A (2015). Explicit knowledge-based reasoning for visual question answering. _arXiv:1511.02570_.
+* Xu _et al._ [2020] Xu J, Kim S, Song M, et al. (2020). Building a pubmed knowledge graph. _Scientific data_, **7**(1), 1-15.
+* Xue _et al._ [2019] Xue K, Zhou Y, and He P (2019). Fine-tuning BERT for Joint Entity and Relation Extraction in Chinese Medical Text. In _Conference on Bioinformatics and Biomedicine (BIBM)_, pages 892-897. IEEE.
+
+Figure 7: Decision reasoning on facts from a domain-knowledge graph [12]

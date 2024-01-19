@@ -1,0 +1,818 @@
+# EIPE-text: Evaluation-Guided Iterative Plan Extraction for Long-Form Narrative Text Generation
+
+ Wang You1\({}^{\dagger}\) Wenshan Wu\({}^{*}\)2 Yaobo Liang\({}^{*}\) Shaoguang Mao
+
+**Chenfei Wu** **Maosong Cao\({}^{\dagger}\) Yuzhe Cai\({}^{\dagger}\) Yiduo Guo\({}^{\dagger}\) Yan Xia Furu Wei **Nan Duan**
+
+Microsoft Research Asia
+
+Footnote 1: Equal contribution
+
+Footnote 2: Work done during internship at Microsoft Research Asia.
+
+###### Abstract
+
+Plan-and-Write is a common hierarchical approach in long-form narrative text generation, which first creates a plan to guide the narrative writing. Following this approach, several studies rely on simply prompting large language models for planning, which often yields sub-optimal results. In this paper, we propose a new framework called Evaluation-guided Iterative Plan Extraction for long-form narrative text generation (EIPE-text), which extracts plans from the corpus of narratives and utilizes the extracted plans to construct a better planner. EIPE-text has three stages: plan extraction, learning, and inference. In the plan extraction stage, it iteratively extracts and improves plans from the narrative corpus and constructs a plan corpus. We propose a question answer (QA) based evaluation mechanism to automatically evaluate the plans and generate detailed plan refinement instructions to guide the iterative improvement. In the learning stage, we build a better planner by fine-tuning with the plan corpus or in-context learning with examples in the plan corpus. Finally, we leverage a hierarchical approach to generate long-form narratives. We evaluate the effectiveness of EIPE-text in the domains of novels and storytelling. Both GPT-4-based evaluations and human evaluations demonstrate that our method can generate more coherent and relevant long-form narratives. Our code will be released in the future.
+
+## 1 Introduction
+
+Large language models have made impressive strides in text generation, performing well in tasks such as machine translation, summarization, and chat Chang et al. (2023)(Bubeck et al., 2023). However, generating long-form narrative remains a challenging task, especially when it comes to maintaining coherence over long ranges and ensuring relevance to an initial premise. This is particularly crucial for applications such as scriptwriting, novels, business reports, journalism, among others.
+
+Human writers often create a plan or outline before beginning to write a narrative, which helps maintain a coherent and logical progression throughout the narrative. Inspired by this, a hierarchical generation approach has been used in many works, such as Re3(Yang et al., 2022), DOC(Yang et al., 2023), and recurrentGPT(Zhou et al., 2023). These works mainly focus on how to generate the full narrative based on a plan and only generate the plan by simply prompting a large language model. However, the planning ability of LLMs is not good enough and requires significant prompting engineering work. Additionally, it is challenging to adapt these models to a specific domain or style of long-form narrative.
+
+To address these limitations, we propose the Evaluation-Guided Iterative Plan Extraction for Long-Form Narrative Text Generation (EIPE-text) framework. EIPE-text leverages a learned planner with enhanced domain expertise to generate a high-quality plan, as illustrated in figure 1. Specifically, EIPE-text consists of three stages: plan extraction, learning, and inference. In the plan extraction stage, we iteratively extract and improve plans from collected narrative corpus to construct a plan corpus for planner learning. To evaluate the quality of extracted plans and the alignment between plans and source narratives, we adopt a QA-based self-evaluation mechanism, leveraging the reading comprehension capabilities of LLMs. Based on evaluation results, we generate detailed refinement instructions to iteratively improve the plan. In the learning stage, we build a better planner by fine-tuning with the plan corpus or in-context learning with examples in the plan corpus, which enhances the ability to generate high-quality plans. Duringthe inference stage, we first generate the plan and then further generate narratives based on the plan.
+
+We evaluated the effectiveness of EIPE-text in the domain of novels and storytelling and found that both the fine-tuning based and in-context learning based planners outperform the baselines. Human evaluation also shows that the results of EIPE-text were more coherent and relevant than those of current state-of-the-art models.
+
+Our contributions can be summarized as follows:
+
+* We propose a new framework, EIPE-text, which automatically extracts high-quality plans from narrative corpus and learns better planners for long-form narrative text generation. This framework can be generalized to all domains.
+* We propose a QA-based evaluation method to automatically evaluate plans and generate detailed instructions to improve the plan based on evaluation results. This QA-based evaluation provides more specific and actionable results than simply leveraging GPT to compare two outputs or provide a score Liu et al. (2023).
+* We demonstrate the effectiveness of our model in the novel and storytelling domains, and we will release the code for future research.
+
+## 2 Method
+
+Our methodology contains three stages: plan extraction, learning, and inference. The entire process is shown in figure 1. During the plan extraction phase, plans are extracted from each narrative within the corpus. These extracted plans are then compiled to construct the plan corpus. By relying on the constructed planning corpus, planner can learn to generate high-quality plans. In the inference stage planner generates a better plan and a
+
+Figure 1: **A Comprehensive Visual Overview of the EIPE-text Framework. The Plan Extraction stage starts with _Plan Sketching_, where an initial plan is generated using an LLM. Then, in the _QA-pairs Generation_ step, a set of QA-pairs is created to evaluate the plan. _QA-based Evaluation_ step evaluates the plan through question answering and generates refinement instructions. In the _Plan Refinement_ step, it iteratively improves the plan based on the instructions until it passes the evaluation. Plans are then used to construct a plan corpus for the planner in the **Learning** stage. Finally, in the **Inference** stage, the planner generates a plan, and the narrative is generated from the plan.
+
+narrative will be generated from the plan.
+
+The plan extraction stage contains plan sketching, QA-pairs generation, QA-based evaluation, and plan refinement. Initially, we create a tree-structured plan using the LLM in the plan sketching step. Next, during the QA-pairs generation phase, we generate a set of QA-pairs, with each pair corresponding to a distinct part within the source narrative. These QA-pairs serve as an evaluation metric for the plan. The QA-based evaluation step evaluates the plan by question answering. For each incorrect QA-pair, we generate corresponding instructions to modify the relevant part of the plan. In the plan refinement step, we integrate these instructions received in previous steps to update the plan. We repeat steps 3 and 4 until the extracted plan passes the evaluation.
+
+In the learning stage, We leverage the plan extracted in the first stage to train an LLM planner. To achieve this, we utilize two strategies: finetuning, as well as in-context learning. These strategies contribute to generating high-quality plans for the given topic.
+
+The inference stage contains two steps: plan generation and narrative generation. Firstly, the planner takes the topic as input and generates a corresponding plan. Secondly, the narrative will be generated in the narrative generation step.
+
+### Plan Extraction
+
+Formally, we have a corpus of narrative \(\mathcal{C}_{n}=\{n_{1},n_{2},...,n_{m}\}\). The plan extraction stage extracts a plan \(p_{i}\) for each narrative \(n_{i}\). The extraction results are compiled to a plan corpus \(\mathcal{C}_{p}=\{p_{1},p_{2},...,p_{m}\}\). We illustrated the process of plan extraction in algorithm 1.
+
+Plan Sketching.For each narrative, we use LLM to extract a tree-structured plan, which serves as the plan sketch. The detailed LLM prompt can be found in appendix A.1. The plan is in a tree structure and the content of each **node** is the summarization of the corresponding section, subsection, and so forth. We show an example of a plan sketch in figure 2.
+
+QA-pairs Generation.For each narrative, we generate a set of QA-pairs, with each pair corresponding to a different segment of the narrative. These QA-pairs can be utilized to evaluate whether the plan includes all aspects of the narrative. Each QA-pair is formulated as a multiple-choice problem, comprising one question, multiple candidate answers, and multiple correct answer indices. The number of QA-pairs is proportional to the length of the narrative. To ensure the quality of the generated QA-pairs, we employ another LLM to answer these questions based on the original text, filtering out any incorrectly answered pairs. The guidelines for this process can be found in appendix A.2.
+
+QA-base Evaluation.We evaluate a plan using QA-pairs and provide detailed refinement instructions for refining the plan further. Specifically, we utilize LLM to answer questions based on the plan. For each incorrect question, we generate an instruction to modify the plan so that the question can be correctly answered. The modification instruction can be one of the following: (1) **add**, which inserts a missing node into the plan; (2) **modify**, which alters the content of a node; (3) **adjust**, which recolates a node to another level of the tree, thereby altering the tree's structure. Detailed refinement instructions enable LLM to make precise improvements to specific parts of the plan.
+
+Plan Refinement.In this step, we incorporate the instructions generated in the previous step to improve the plan. Ideally, we should apply the changes one by one. In order to improve efficiency, we instruct the LLM to apply all instructions simultaneously. However, the refinement instructions generated by LLM may not always address the incorrect questions. Therefore, we iteratively perform the refinement instructions generation and plan refinement steps until the new plan can pass the QA-based evaluation. This process ensures that the final plan has addressed all the identified errors and meets the desired quality standards.
+
+While LLM possesses a self-improving ability and can refine the plan through simple prompting, the quality of the improvement results may still not be good enough or even worse. Our QA-based evaluation, on the other hand, can identify specific errors in the plan and provide refinement instructions in the form of instructions to enhance the plan. This approach can achieve better refinement performance.
+
+### Learning
+
+During the learning phase, we implemented two methods to enhance the performance of the planner: the in-context learning method and the fine-tuning method.
+
+The in-context learning method improves the planner by selecting representative demonstration examples from the plan corpus. By selecting different demonstration examples, the fixed LLM can quickly adapt to specific domains or styles.
+
+On the other hand, the fine-tuning method can further improve the planner's ability by training it on all plan corpus. This method leverages all the data in the plan corpus and enables the planner to adapt to multiple domains simultaneously.
+
+### Inference
+
+The inference stage comprises two steps: plan generation and narrative generation.
+
+Plan Generation.In this step, the planner takes the chosen topic as input and produces a corresponding plan. The planner constructs a well-structured plan that outlines the key elements and sections to be covered in the ensuing narrative.
+
+Narrative Generation.The narrative is generated from the generated plan in this step. This narrative seamlessly integrates the content outlined in the plan, ensuring that the resulting narrative is not only logically organized but also rich in detail and context. The final narrative is a well-rounded piece of long-form narrative that effectively conveys the information related to the chosen topic.
+
+### Discussion
+
+In this section, we will discuss how EIPE-text works. Here is our analysis:
+
+Let \(q\) be the premise query. The probability of desired output based on premise query \(p(n|q)\) could be rewritten as
+
+\[P(n|q)=P(p|q)P(n|p) \tag{1}\]
+
+When plan \(p\) is of high quality, \(P(n|p)\) will be high. So as \(P(p|q)\) increases, \(P(n|q)\) increases too. Our framework EIPE-text actually increases \(P(p|q)\).
+
+Besides, the process of plan refinement in figure 1 could be understood as Reinforcement Learning(RL), LLM gets observation from answering the question, and then obtains refinement instructions according to the true or false case. After obtaining refinement instructions, LLM changes the original state to the new state i.e. revise plan. After many interactions with the "environment", the "state" will be iterated to a suitable "state" that can be used to improve \(P(p|q)\).
+
+To practically exemplify the effectiveness of EIPE-text, we conducted a case study of plan generation through in-context learning with one demonstration. A detailed exploration of this case is provided in the Appendix D.2 for interested readers.
+
+## 3 Experiments
+
+In this section, we compare EIPE-text in novels and storytelling generation with the baselines. All experiments show that EIPE-text is better than the baselines, verifying the effectiveness of our framework.
+
+### Setup
+
+For plan extraction stage, we use Azure Openai GPT-4 as our experimental LLM. And for inference stage, we use the planner to generate a plan to further generate the narrative. It should be emphasized that we did not intentionally implement the narrative generation, but modified it based on recurrentGPT, as described in the appendix B.1.
+
+For all the settings mentioned in the following section, unless special emphasis, they adhere to the description provided above.
+
+### Novel
+
+#### 3.2.1 Dataset
+
+Novels are long-form narratives that include intricate plots, and rich character development. The model needs to maintain consistency in plots and character development and generate interesting stories. We use the data collected from Project American Literature1, Writing Prompts2 and etc. Then we aggregate a training dataset containing total 1292 stories. Besides, we collected 120 prompts as a test set from Writing Prompts, which cover six genres. The more information about this dataset is shown in table 1.
+
+Footnote 1: [https://americanliterature.com/short-stories](https://americanliterature.com/short-stories)
+
+Footnote 2: [https://blog.reedsy.com/creative-writing-prompts/](https://blog.reedsy.com/creative-writing-prompts/)
+
+#### 3.2.2 Setting
+
+EIPE-text (in-context)For learning stage, we use the _text-embedding-ada-002_, to obtain text embeddings of plan corpus. These embeddings will then be utilized in conjunction with the _k-means_ algorithm for cluster purposes. We use _k-means_ getting 20 clustering centroids as demonstrations to learn a planner and use the planner during comparing with baselines.
+
+#### 3.2.3 Baselines
+
+recurrentGPTA language-based simulacra of the recurrence mechanism in RNNs that uses language-based components and defines a recurrent computation graph via prompt engineering.
+
+It is worth mentioning that we are not directly comparing with Re3 and DOC, because recurrent-GPT is already way ahead of these methods.
+
+#### 3.2.4 Metric
+
+Our evaluation employs a pairwise comparison metric. We report results individually for each pairwise comparison between EIPE-text and each baseline, never mixing numbers from different comparisons following Re3 Yang et al. (2022). We show the criteria as outlined in Yang et al. (2023) for novel as following:
+
+* **Interesting**: An interesting novel captivates the reader's attention, engages them emotionally, and holds their interest throughout.
+* **Coherent**: A coherent novel follows a logical and consistent plot-line without significant gaps or inconsistencies.
+* **Relevant**: Faithful to the initial premise.
+
+Automatic EvaluationFor automatic evaluation, we employed GPT-4 to assess various aspects of the generated narrative. GPT-4 automatic evaluation is highly affected by the order and unstable, so all metrics are judged by GPT4 with a premise, aforementioned criteria and two corresponding stories in random order. We also use majority voting system to evaluate each criterion of each pair. The evaluation prompt for novel can be found in appendix C.1.
+
+\begin{table}
+\begin{tabular}{l c c c c} \hline \hline
+**Dataset** & **Train Size** & **Test Size** & **Avg Length** & **Max Length** \\ \hline TED Talk & 2468 & 130 & 2078 & 9044 \\ Novel & 1292 & 120 & 3741 & 14493 \\ \hline \hline \end{tabular}
+\end{table}
+Table 1: Comprehensive Dataset Information for TED Talk and Novel.
+
+\begin{table}
+\begin{tabular}{l c c c} \hline \hline Novel genres & \multicolumn{3}{c}{Overall(human)} \\ \hline \(\sim\)4500words & Interesting & Coherent & Relevant \\ \hline EIPE-text (in-context) & 56.7 & **64.2** & **75.8** \\ recurrentGPT & **60.0** & 59.2 & 62.5 \\ \hline \hline \end{tabular}
+\end{table}
+Table 2: Novel Human Evaluation Results. Pair-wise comparison using human evaluation of EIPE-text with recurrentGPT for 120 novels of different genres. Results never mix numbers from different comparisons
+
+\begin{table}
+\begin{tabular}{l c c c} \hline \hline Novel genres & \multicolumn{3}{c}{Overall(automatic)} \\ \hline \(\sim\)4500words & Interesting & Coherent & Relevant \\ \hline EIPE-text (in-context) & 55.0 & **84.2** & **92.5** \\ recurrentGPT & **58.3** & 65.8 & 84.2 \\ \hline \hline \end{tabular}
+\end{table}
+Table 3: Novel GPT4 Evaluation Results. Pair-wise comparison using GPT-4 evaluation of EIPE-text with recurrentGPT for 120 novels of different genres. Results never mix numbers from different comparisonsHuman EvaluationIn order to ensure impartial and high-quality evaluations, we collaborated with third-party data annotators. Each generated data pair, comprising novels A and B presented in random order, underwent meticulous evaluation by three distinct annotators. These annotators possess proficient English language skills and were provided with explicit instructions to evaluate and deliver judgments on the superiority between novel A and novel B, or if they are indistinguishable, specifically in relation to the aforementioned criteria.
+
+#### 3.2.5 Result
+
+We show the experiment results of novels in table 2 and table 3. As we can see from the table, EIPE-text shows an advantage in coherence and relevance in both human and automatic evaluation. Although the human evaluation is less interesting (3.3%), the improvement of coherence (5.0%) and relevance (13.3%) are significant. The same trend can be seen in automatic evaluation, it is less interesting than recurrentGPT(3.3%), but coherent (18.4%) and relevant (8.3%) are significantly higher. These results indicate that EIPE-text improves the overall quality of generated narrative, and also indicate that automatic evaluation and human evaluation have certain relevance.
+
+### Strorytelling
+
+#### 3.3.1 Dataset
+
+TED Talks 3 are influential presentations that cover a wide range of topics. They are known for their engaging narratives, concise structure, and powerful messages, which can be challenging to generate for both models and humans. We use the data collected by Kaggle 4. The training dataset aggregates 2,468 TED Talks spanning the years 1984 to 2016. In addition, we have curated 130 TED Talk transcripts post-2021 as our testing datasets as shown in table 1.
+
+Footnote 3: [https://www.ted.com/talks](https://www.ted.com/talks)
+
+Footnote 4: [https://www.kaggle.com/datasets/rounkbanik/ted-talks](https://www.kaggle.com/datasets/rounkbanik/ted-talks)
+
+#### 3.3.2 Setting
+
+EIPE-text (in-context)For learning stage, text embeddings obtained using _text-embeddings-ada-002_ are used for clustering together with the _k-means_ algorithm. Then we use 20 clustering centroids as demonstrations to learn a planner.
+
+EIPE-text (finetune)We finetune the open source LLM, LLaMA [13], using the plan corpus and use it as planner during learning stage. Specially, we finetune LLaMA-7B using lora[14].
+
+#### 3.3.3 Baselines
+
+GPT4 raw plannerIn this setup, planner is GPT4 zero-shot whose ability to plan depends entirely on its native capabilities. After the planner generates the plan, narrative generation follows the same way as the inference stage in 3.1
+
+LLaMA raw plannersimilar to GPT4 raw planner, but the planner is untrained LLaMA.
+
+#### 3.3.4 Metric
+
+We only adopt automatic evaluation in storytelling generation. The evaluation criteria were tailored to specific domain to ensure relevant and accurate assessments, so we use other criteria for storytelling:
+
+* **Coherent**: The talk should have a clear structure, smooth transitions, and a strong conclusion for easy comprehension and a consistent theme.
+* **Interesting**: It should use storytelling and examples to engage the audience, maintaining their curiosity throughout.
+* **Relevant**: The topic should be timely, address current issues, and offer fresh insights, not just repeat existing information.
+* **Inspiring**: The talk should convey passion, present innovative ideas, and encourage the audience to think differently or take action.
+
+\begin{table}
+\begin{tabular}{l l c c} \hline \hline setting A & setting B & A Win Ratio & B Win Ratio \\ \hline LLaMA raw planner & EIPE-text (finetune) & 6.2 & **93.8** \\ GPT4 raw planner & EIPE-text (in-context) & 22.5 & **75.2** \\ \hline \hline \end{tabular}
+\end{table}
+Table 4: TED Talk Automatic Evaluation Results. Pair-wise comparison using GPT-4 evaluation of EIPE-text with baselines for 130 TED talk transcripts. Results in different comparisons are not comparable with each other.
+
+It should be emphasized that we only use majority voting system to evaluate each pair for all criteria, instead of evaluating each criterion of each pair. The evaluation prompt for storytelling can be found in appendix C.2
+
+#### 3.3.5 Results
+
+We show the experiment result of storytelling domain on TED Talk in table 4. Under the finetune setting, EIPE-text far outperforms LLaMA raw planner (87.6%). Also under setting B, EIPE-text is significantly outperform the GPT4 raw planner (52.7%). EIPE-text either using a finetune base planner or using in-context learning based planners is well ahead of the LLM itself.
+
+## 4 Analysis
+
+In this section, we explore the key aspects of designing an effective planner and provide an experimental analysis of the effectiveness of the plan refinement process.
+
+### Ablation study of in-context learning based planner
+
+Our investigation centers around two fundamental questions: (1) How does the demonstration selection algorithm impact the performance of our planner? (2) What effect does the number of demonstration examples have on the planner's performance?
+
+To address these questions, we designed experiments where we compared various planner configurations, including (1) **n-shot cluster-based planner**: this configuration utilizes a cluster-based approach to select n demonstration examples. (2) **n-shot retrieval-based planner**: in contrast, this configuration employs a retrieval-based method to select n demonstration examples.
+
+**Using clustering to select more demonstrations leads to better results.** We show the results in table 5. In the comparison between the 20-shot cluster-based planner and the 5-shot cluster-based planner, the 20-shot cluster-based planner outperforms the 5-shot cluster-based planner with a win ratio of 70.9% versus 26.8%. This suggests that using more demonstration examples leads to better planner performance. In addition, as the plan length we use is shorter than full narrative, we can use more plans as demonstrations within context window. When comparing the 5-shot cluster-based planner and the 5-shot retrieval-based planner, the clustering-based method for selecting demonstration examples appears to be slightly more effective. This trend is more pronounced when looking at the comparison between the 20-shot cluster-based planner and the 20-shot retrieval-based planner. The 20-shot cluster-based planner significantly outperforms the retrieval-based planner, with a win ratio of 67.2% versus 32.0%. This suggests that using clustering for selection is considerably more effective than relying on retrieval-based methods.
+
+### Comparison between hierarchical generation and non-hierarchical
+
+To investigate the impact of narrative generation methods on the performance of our planner, we compared hierarchical generation with non-hierarchical methods.
+
+We experiment with non-hierarchical generation including configurations: (1) **0-shot without planner**: generate full narrative directly in one step. (2) **n-shot cluster-based without planner**: select n demonstrations using a cluster-based approach and generate a full narrative using these demonstrations. (3) **n-shot retrieval-based without planner**: similar to previous setting, instead, we rely on a retrieval-based approach to select demonstrations.
+
+**Hierarchical generation is effective compared with non-hierarchical**. We show the results in table 5. The 0-shot planner, significantly outperforms 0-shot without planner, achieving a win ratio of 76.7% versus 20.9%. Moreover, similar trends can be found in 5-shot setting with 88.2% versus 11.0% and 70.6% versus 29.4%.
+
+### Effectiveness of the plan refinement process
+
+In addition, we also want to know whether self-refinement can be effectively refined and the reasons behind its convergence.
+
+Fast Convergence with Self-RefinementWe can see from the table 6 that our framework can converge in an average of 2.98 epochs, which is actually very fast and it is hard to converge without using self-refinement. The average accuracy curve of iterative refinement process is shown in figure 3.
+
+Iterative Plan Refinement Ensures AlignmentThe refined plan contains three operations, we monitor the number of three operations in the process. In addition, since we organize the plan into a tree structure, we also record the change in the number of nodes in the tree and the change in the number of secondary nodes (children of the root node) throughout the process. As can be seen from table 6, the average add, modify and adjust operations occur 8.26 times, 3.22 times, and 2.25 times respectively. The average number of nodes increase by 11.41. We can clearly see these changes in figure 2 (for more detail in appendix D.1). This indicates that in plan refinement process, it does not simply add nodes. Instead, it can accurately modify relevant parts and adjust structure according to the question answering. Thus, these three operations ensure the alignment between the plan and the original narrative.
+
+### Case study of in-context learning based plan generation
+
+Relying solely on comprehensive narratives for learning can often lead to missing finer details. Narratives are typically dense with information, posing challenges for models to pinpoint and retain crit
+
+Figure 3: Average accuracy curve of iterative refinement process.
+
+Figure 2: An Example of the Plan Refinement Process.
+
+ical elements. Furthermore, methods that learn from complete narratives are usually computationally expensive and time demanding. On the other hand, when using in-context learning with plans, models can more adeptly identify and relate to relevant information within each contextual segment. This technique not only ensures that key details aren't overlooked but also streamlines the learning process regarding the text's semantic framework, ultimately conserving computational resources. We show an example of 1-shot in Appendix D.2, from which we can see that the generated plan is not only coherent but also retains the salient features of the demonstration, while effectively addressing the topic query.
+
+## 5 Related Work
+
+Long-form Narrative Text GenerationAs for long-form narrative text generation, recent studies tackle this from the following perspectives: appending the generated prefix to the encoder Shao et al. (2017), while newer models like Guan et al. (2021) focus on capturing sentence and discourse-level coherence, and DiscoDVT by Ji and Huang (2021) leverages discrete variational Transformers to enhance long-range coherence in generated texts. Another type of work adopts the plan-and-write strategy Fan et al. (2018). In particular, there has been extensive exploration of story planning Yao et al. (2019); Fan et al. (2019); Goldfarb-Tarrant et al. (2020). A hierarchical story generation system with recursive prompting and revision was proposed by Yang et al. (2022). And the current state-of-the-art work recurrentGPT Zhou et al. (2023), which uses large language model (LLM) such as ChatGPT and uses natural language to simulate the Long Short-Term Memory mechanism in an LSTM. The current plan results from these methods are not satisfactory. Instead, we use LLM to automatically mine the plan and train a good planner to achieve good results. Furthermore, from the plan to the full text, our methods and theirs are complementary and can be combined to achieve better results.
+
+Human-AI Co-writingHuman-AI co-writing systems have been developing at the intersection of NLP and human-computer interaction (HCI) fields, such as Wordcraft Yuan et al. (2022), TaleBrush Chung et al. (2022), CoAuthor Lee et al. (2022) and Dramatron Mirowski et al. (2023). These works explore the possibilities of using LLM as a writing assistant to humans. Our work generates an explicit plan, which can be easily provided for human review and modification, making human-AI co-writing easier.
+
+\begin{table}
+\begin{tabular}{c|c c c|c c|c c} \hline \multirow{2}{*}{metric} & \multicolumn{3}{c|}{operation} & \multicolumn{3}{c|}{difference before and after} & \multicolumn{2}{c}{epochs and question numbers} \\ \cline{2-7}  & **add** & **modify** & **adjust** & **all nodes** & **secondary nodes** & **average epoch** & **average questions** \\ \hline num & 8.26 & 3.22 & 2.25 & 11.41 & 0.25 & 2.98 & 35.71 \\ \hline \end{tabular}
+\end{table}
+Table 6: Iterative Refinement Metric
+
+\begin{table}
+\begin{tabular}{l l c} \hline \hline
+**A** & **B** & **A Win Ratio** & **B Win Ratio** \\ \hline
+**Different Demonstration Number** & & \\ \hline
+20-shot cluster-based planner & 5-shot cluster-based planner & **70.9** & 26.8 \\ \hline
+**Different Demonstration Selection** & & \\ \hline
+5-shot cluster-based planner & 5-shot retrieval-based planner & **51.6** & 46.0 \\
+20-shot cluster-based planner & 20-shot retrieval-based planner & **67.2** & 32.0 \\ \hline
+**Different Narrative Generation Method** & & \\ \hline
+0-shot planner & 0-shot without planner & **76.7** & 20.9 \\
+5-shot cluster-based planner & 5-shot cluster-based without planner & **88.2** & 11.0 \\
+5-shot retrieval-based planner & 5-shot retrieval-based without planner & **70.6** & 29.4 \\ \hline \hline \end{tabular}
+\end{table}
+Table 5: **Ablation Study Result. Different Demonstration Number**: In the learning stage of EIPE-text, in-context learning based planner use different numbers of demonstrations. **Different Demonstration selection**: In-context learning based planner can implement different methods, such as clustering or retrieving items related to the input topic, to select demonstrations. **Different Narrative Generation Method**: In addition to being able to generate narratives using EIPE-text. Narrative can also be generated in one step by simply combining several narratives as demonstrations without planner giving an input topic.
+
+Conclusions
+
+EIPE-text represents a significant step forward in the field of long-form narrative text generation, addressing the challenges of coherence and structure over extended pieces of text. With its ability to generate high-quality long-form narratives and aid human writers, EIPE-text opens up new possibilities for leveraging the capabilities of LLMs in creative and expressive writing tasks. Future research could explore further applications and extensions of EIPE-text in various domains, advancing the state of the art in automated text generation.
+
+## 7 Limitations
+
+During plan extraction stage, the two steps of QA-pairs generation and questions answering largely depend on LLM's own reasoning capability, so this method can only produce ideal results on models with strong reasoning capability (GPT4, Claude, etc.). Otherwise, it may lead to the refinement process failing to converge. Our framework is a data-driven approach, so it does not improve the OOD performance.
+
+## References
+
+* B. Bubeck, V. Chandrasekaran, R. Eldan, J. Gehrke, E. Horvitz, E. Kamar, P. Lee, Y. T. Lee, Y. Li, S. Lundberg, H. Nori, H. Palangi, M. Tulio Ribeiro, and Y. Zhang (2023)Sparks of artificial general intelligence: early experiments with gpt-4. Cited by: SS1.
+* Y. Chang, X. Wang, J. Wang, Y. Wu, L. Yang, K. Zhu, H. Chen, X. Yi, C. Wang, Y. Wang, W. Ye, Y. Zhang, Y. Chang, P. S. Yu, Q. Yang, and X. Xie (2023)A survey on evaluation of large language models. External Links: 2303.01663 Cited by: SS1.
+* J. J. Chung, W. Kim, K. Min Yoo, H. Lee, E. Adar, and M. Chang (2022)Talebrush: sketching stories with generative pretrained language models. In Proceedings of the 2022 CHI Conference on Human Factors in Computing Systems, pp. 1-19. Cited by: SS1.
+* A. Fan, M. Lewis, and Y. Dauphin (2019)Strategies for structuring story generation. In Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), Melbourne, Australia, pp. 889-898. External Links: Link, Document Cited by: SS1.
+* A. Fan, M. Lewis, and Y. Dauphin (2019)Strategies for structuring story generation. In Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics, Florence, Italy, pp. 2650-2660. External Links: Link, Document Cited by: SS1.
+* S. Goldfarb-Tarrant, T. Chakrabarty, R. Weischedel, and N. Peng (2020)Content planning for neural story generation with aristotelian rescoring. In Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP), Online, pp. 4319-4338. External Links: Link, Document Cited by: SS1.
+* J. Guan, X. Mao, C. Fan, Z. Liu, W. Ding, and M. Huang (2021)Long text generation by modeling sentence-level and discourse-level coherence. In Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 1: Long Papers), Online, pp. 6379-6393. External Links: Link, Document Cited by: SS1.
+* E. J. Hu, y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang, and W. Chen (2022)LoRA: low-rank adaptation of large language models. In International Conference on Learning Representations, External Links: Link Cited by: SS1.
+* H. Ji and M. Huang (2021)DiscoDVT: generating long text with discourse-aware discrete variational transformer. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing, Online and Punta Cana, Dominican Republic, pp. 4208-4224. External Links: Link, Document Cited by: SS1.
+* M. Lee, P. Liang, and Q. Yang (2022)Coauthor: designing a human-ai collaborative writing dataset for exploring language model capabilities. In Proceedings of the 2022 CHI Conference on Human Factors in Computing Systems, pp. 1-19. Cited by: SS1.
+* Y. Liu, D. Iter, Y. Xu, S. Wang, R. Xu, and C. Zhu (2023)Gpteval: nlg evaluation using gpt-4 with better human alignment. arXiv preprint arXiv:2303.16634. Cited by: SS1.
+* P. Mirowski, K. W. Mathewson, J. Pittman, and R. Evans (2023)Co-writing screenplays and theatre scripts with language models: evaluation by industry professionals. In Proceedings of the 2023 CHI Conference on Human Factors in Computing Systems, pp. 1-34. Cited by: SS1.
+* Y. Shao, S. Gouws, D. Britz, A. Goldie, B. Strope, and R. Kurzweil (2017)Generating high-quality and informative conversation responses with sequence-to-sequence models. In Proceedings of the 2017 Conference on Empirical Methods in Natural Language Processing, Copenhagen, Denmark, pp. 2210-2219. External Links: Link, Document Cited by: SS1.
+* H. Touvron, T. Lavril, G. Izacard, X. Martinet, M. Lachaux, T. Lacroix, B. Roziere, N. Goyal, E. Hambro, F.
+
+Azhar, Aurelien Rodriguez, Armand Joulin, Edouard Grave, and Guillaume Lample. 2023. Llama: Open and efficient foundation language models.
+* Yang et al. (2023) Kevin Yang, Dan Klein, Nanyun Peng, and Yuandong Tian. 2023. DOC: Improving long story coherence with detailed outline control. In _Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)_, pages 3378-3465, Toronto, Canada. Association for Computational Linguistics.
+* Yang et al. (2022) Kevin Yang, Yuandong Tian, Nanyun Peng, and Dan Klein. 2022. Re3: Generating longer stories with recursive re prompting and revision. In _Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing_, pages 4393-4479, Abu Dhabi, United Arab Emirates. Association for Computational Linguistics.
+* Yao et al. (2019) Lili Yao, Nanyun Peng, Ralph Weischedel, Kevin Knight, Dongyan Zhao, and Rui Yan. 2019. Plan-and-write: Towards better automatic storytelling. In _Proceedings of the AAAI Conference on Artificial Intelligence_, volume 33, pages 7378-7385.
+* Yuan et al. (2022) Ann Yuan, Andy Coenen, Emily Reif, and Daphne Ippolito. 2022. Wordcraft: story writing with large language models. In _27th International Conference on Intelligent User Interfaces_, pages 841-852.
+* Zhou et al. (2023) Wangchunshu Zhou, Yuchen Eleanor Jiang, Peng Cui, Tiannan Wang, Zhenxin Xiao, Yifan Hou, Ryan Colterell, and Mrinmaya Sachan. 2023. Recurrentgpt: Interactive generation of (arbitrarily) long text.
+
+## Appendix A Prompts
+
+### Prompts
+
+Distill the salient information and thematic flow from the original article into a tree-like text representation of a mind map in the following format:
+
+TOPIC
+
+ - Main Topic  - Sub Topic  - Sub-Sub Topic  - Sub-Sub Topic ...  - Main Topic  - Sub Topic  - Sub Topic
+
+### Prompt of QA-pairs Generation Guideline
+
+Based on the content of the article, generate several multiple-choice questions and corresponding answers:
+
+1. Not too detailed
+2. Focus on the logic of the article
+3. Deep understanding of the article after answering these questions
+4. Each question must have 4 options: A, B, C, D.
+5. For each question, there might be more than one correct answer, identify all correct answers separated by ";"
+6. Questions should reflect the structure of the article.
+7. Questions should include three types: what, why, how.
+8. Provide related main ideas in the article for each question.
+9. Avoid options like "All of the above" or "None of the above"; use "A;B;C" format.
+
+These questions are generated based on the article's content and the author's opinion, not my opinion.
+
+## Appendix B Experiment Details
+
+### Modification for recurrentGPT
+
+The way to improve recurrentGPT. recurrentGPT is prone to loss of global memory just as RNN. And we also find that the long-term memory in recurrentGPT is not exactly long-term memory. To compensate for this, we can insert the generated plan as additional memory to recurrentGPT, as shown in figure 4. At each time step ('t'), recurrentGPT operates on a dual input system: the paragraph produced in the preceding step and a concise yet directive instruction for the subsequent paragraph. A crucial aspect is the integration of the model's long-term memory, which acts as a repository for storing previously generated summaries, and importantly, it can retrieve these summaries through semantic search, with the ability to store them on external hard drives. Simultaneously, the system actively maintains a short-term memory, responsible for encapsulating key information from recent time steps, a repository that gets updated consistently as the process unfolds. Crucially, the "generated plan," a newly introduced memory, becomes an integral part of this intricate orchestration. When the components converge, they create a coherent prompt that triggers the backbone language model, aptly dubbed the "backbone LLM," to undertake its primary task: generating a fresh paragraph while simultaneously outlining a succinct plan for the forthcoming paragraph. What's truly remarkable is how this "generated plan" seamlessly merges with the process, as it is not only updated in each time step but also contributes to enriching the long-term memory. This meticulous integration ensures continuity and coherence throughout the sequence, forging a recurrent mechanism that drives the generation process forward, where the "generated plan" plays a pivotal role in shaping the narrative's development.
+
+### Use K-Means Get Demonstrations
+
+Using text-embeddings-ada-002 directly to convert a text format plan to embedding for clustering is not varied. We have adopted a combination approach of K-means and LLM. To be specific, we use LLM, according to prompt "Without loss of generality, list distinctive characteristics of this exemplar that establish it as an effective paradigm for designing genre. no explanation is needed." to get characteristics of plans. Then these characteristics are converted into embedding before clustering. After we set the number of clusters k, we can get k clustering centers, and we use these centroid as final demonstrations.
+
+## Appendix C Automatic Evaluation
+
+### Novel Automatic Evaluation
+
+In this task, you will be presented with two novels side-by-side and asked to evaluate them based on three metrics: Coherence, Interestingness, Relevance. Your task is to determine which novel is better for each metric or indicate if both novels are indistinguishable.
+
+- Coherent: A coherent novel follows a logical and consistent plot-line without significant gaps or inconsistencies.
+
+- Interesting: An interesting novel captivates the reader's attention, engages them emotionally, and holds their interest throughout.
+
+- Relevant. Faithful to the initial premise. The novel effectively aligns its plot, message, and writing with its initial premise, ensuring consistency and faithfulness to the core theme.
+
+Based on these three aspects, make a decision on which novel is achieving the desired impact, in the manner like this:
+
+[Scratch Pad]
+
+Name:
+
+'distinctive characteristics' and 'elaborate' on them
+
+Name:
+
+'distinctive characteristics' and 'elaborate' on them
+
+[Reflection]
+
+After evaluating both novels based on the criteria of 'coherence', 'interestingness','relevance', I have come to the following 'thorough' conclusions:
+
+- Coherence:
+
+- Interestingness:
+
+- Relevance:
+
+[Final Choice]:
+
+Coherence: Name;
+
+Interestingness: Name;
+
+Relevance: Name;
+
+### TED Talks Automatic Evaluation
+
+The coach's preference for evaluating the TED Talks can be summarized in the following spec:
+
+- Coherence: The coach will assess how well the TED Talk is structured and organized. This includes a clear introduction, logical flow of ideas, smooth transitions between points, and a strong conclusion. The talk should be easy to follow and understand, with a consistent theme throughout.
+
+- Interestingness: The coach will evaluate how engaging and captivating the TED Talk is for the audience. This includes the use of storytelling, anecdotes, and examples to illustrate points, as well as the speaker's ability to maintain the audience's attention and curiosity throughout the talk.
+
+- Relevance: The coach will consider the importance and significance of the topic being discussed
+
+Figure 4: Illustration of the improvement of recurrent-GPT. recurrentGPT uses natural language simulating an LSTM, we insert additional memory to main the long-term memory in LSTM
+
+in the TED Talk. The subject matter should be timely, relevant to current events or societal issues, and have a broad appeal to a diverse audience. The talk should also provide new insights or perspectives on the topic, rather than simply rehashing existing information.
+
+- Inspiration: The coach will assess the TED Talk's ability to inspire, motivate, and provoke thought in the audience. This includes the speaker's ability to convey passion and enthusiasm for the topic, as well as the presentation of innovative ideas, solutions, or calls to action that encourage the audience to think differently or take action in their own lives.
+
+Based on these four aspects, the coach will make a decision on which TED Talk is stronger and more effective in achieving the desired impact on the audience, in the manner like this:
+
+[Scratch Pad]
+
+Name:
+
+'distinctive characteristics' and 'elaborate' on them
+
+Name:
+
+'distinctive characteristics' and 'elaborate' on them
+
+[Reflection]
+
+After evaluating both TED Talks based on the criteria of 'coherence', 'interestingness','relevance', and 'inspiration', I have come to the following 'thorough' conclusions:
+
+- Coherence:
+
+- Interestingness:
+
+- Relevance:
+
+- Inspiration:
+
+[Final Choice]: Name
+
+## Appendix D Examples
+
+### Plan Extraction Example
+
+In this section, we show the detailed process of an iteration in the plan extraction stage in the figure 5. And the comparison of initialized plans and refined plans are also shown in figure 6, 7, 8
+
+### Plan Generation Example
+
+In figure 9, we observe several salient aspects of the demonstration on the left side: 1. the utilization of relatable examples and analogies. 2. the connection of various disciplines and concepts. 3. the incorporation of quotes from notable figures. These attributes are integrated into the generated plan. Notably, the generated plan contains relatable examples to substantiate its viewpoints and incorporates relevant quotes. When we transition to the generated plan on the right, it's evident that the plan incorporates these attributes seamlessly. For instance: 1. the mention of "Daniel Kahneman's System 1 and System 2 thinking" in the plan mirrors the demonstration's theme on "Human perception and understanding.". 2. the outcome's emphasis on quotes is reflective of the demonstration's approach, incorporating wisdom from Peter Drucker and Tim Ferriss. We can observe that the generated plan not only maintains coherence but also preserves the key features of the demonstration, while effectively responding to the topic query.
+
+## Initialized Plan
+
+Pig Products in Daily Life
+
+- Introduction
+
+- Netherlands: 16 million people, 12 million pigs
+
+- Research on pig usage in products
+
+- Products containing pig parts
+
+- Bathroom items
+
+- Soap (fatty acids from pork bone fat)
+
+- Shampoo, conditioner, anti-wrinkle cream, body lotion, toothpaste
+
+- Food items
+
+- Dough improver (proteins from pig hairs)
+
+- Low-fat butter (gelatin for texture)
+
+- Cheesecake, chocolate mousse, tiramisu, vanilla pudding (gelatin for appearance)
+
+- Construction materials
+
+- Cellular concrete (proteins from bones)
+
+- Train brakes (bone ash)
+
+- Household items
+
+- Fine bone china (translucency and strength)
+
+- Paint (texture and glossiness)
+
+- Sandpaper (bone glue)
+
+- Paintbrushes (pig hairs)
+
+- Meat products
+
+- Portion-controlled meat cuts (fibrin from pig blood)
+
+- Beverages
+
+- Beer, wine, fruit juice (gelatin for clarity)
+
+- Other products
+
+- Cigarettes with hemoglobin filters
+
+- Injectable collagen for wrinkles
+
+- Bullets
+
+- Heart valve implants
+
+- Renewable energy (fuel from unused pig parts)
+
+- Conclusion
+
+- 185 products found containing pig parts
+
+- Importance of knowing what products are made of
+
+- Taking better care of raw materials and producers
+
+**QA-based evaluation**
+
+**Question 1:** Why does soap contain fatty acids made from boiling pork bone fat?
+
+* A. To harden the soap
+* B. To give it a pearl-like effect
+* C. To make it smell better
+* D. To improve its cleaning ability
+
+**Answer 1:** A; B
+
+**Wrong Answer 1:** A
+
+**Reference 1:** "Level 4 node 'Soap (fatty acids from pork bone fat)"
+
+**Question 2:** What is the purpose of using pig hemoglobin in cigarette filters?
+
+* A. To create an artificial lung
+* B. To improve the taste of the cigarette
+* C. To make the cigarette burn slower
+* D. To reduce the amount of harmful chemicals
+
+**Answer 2:** A
+
+**Wrong Answer 2:** D
+
+**Reference 2:** "Level 4 node 'Cigarettes with hemoglobin filters"
+
+**Question 3:** What is the purpose of using pig proteins in cellular concrete?
+
+* A. To strengthen the concrete
+* B. To make the concrete lighter
+* C. To improve the concrete's heat resistance
+* D. To increase the concrete's elasticity
+
+**Answer 3:** B
+
+**Wrong Answer 3:** A
+
+**Reference 3:** "Level 4 node 'Cellular concrete (proteins from bones)"
+
+**Question 4:** Why did the director of the heart valve company not want their product to be associated with pigs?
+
+* A. Because pigs are considered unclean animals
+* B. Because it would reduce the perceived value of the product
+* C. Because they were concerned about potential religious objections
+* D. Because they wanted to maintain the high-tech image of the product
+
+**Answer 4:** D
+
+**Wrong Answer 4:** C
+
+**Reference 4:** "Level 4 node 'Heart valve implants"
+
+**Question:** How are pig-derived ingredients used in renewable energy?
+
+* A. As a substitute for fossil fuels
+* B. In the production of solar panels
+* C. In the production of wind turbines
+* D. As a source of biofuel
+
+**Answer:** D
+
+**Wrong Answer:** A
+
+**Reference:** "Level 4 node 'Renewable energy (fuel from unused pig parts)"
+
+**Refinement Instructions**
+
+**Instruction**: "Add a new level 5 node 'Hardening agent and pearl-like effect' under level 4 node 'Soap (fatty acids from pork bone fat)', as the first level 5 node"
+
+**Instruction**: "Add a new level 5 node 'Creates an artificial lung in the filter for a healthier cigarette' under level 4 node 'Cigarettes with hemoglobin filters', as the first level 5 node"
+
+**Instruction**: "Add a new level 5 node 'Lightweight and fully reusable' under level 4 node 'Cellular concrete (proteins from bones)', as the first level 5 node"
+
+**Instruction**: "Add a new level 5 node 'Director did not want the product associated with pigs to maintain its high-tech image' under level 4 node 'Heart valve implants', as the first level 5 node"
+
+**Instruction**: "Change the name of level 4 node 'Renewable energy (fuel from unused pig parts)' to 'Renewable energy (fuel from pig waste)'; Add a new level 5 node 'Pig waste is converted into fuel for renewable energy' under level 4 node 'Renewable energy (fuel from pig waste)"
+
+**Refine plan**
+
+Pig Products in Daily Life
+
+- Introduction
+
+- Netherlands: 16 million people, 12 million pigs
+
+- Research on pig usage in products
+
+- Products containing pig parts
+
+- Bathroom items
+
+- Soap (fatty acids from pork bone fat)
+
++ Hardening agent and pearl-like effect
+
+- Shampoo, conditioner, anti-wrinkle cream, body lotion, toothpaste
+
+- Food items
+
+- Dough improver (proteins from pig hairs)
+
+- Low-fat butter (gelatin for texture)
+
+- Cheesecake, chocolate mousse, tiramisu, vanilla pudding (gelatin for appearance)
+
+- Construction materials
+
+- Cellular concrete (proteins from bones)\(\downarrow\) Lightweight and fully reusable
+
+- Train brakes (bone ash)
+
+- Household items
+
+- Fine bone china (translucency and strength)
+
+- Paint (texture and glossiness)
+
+- Sandpaper (bone glue)
+
+- Paintbrushes (pig hairs)
+
+- Meat products
+
+- Portion-controlled meat cuts (fibrin from pig blood)
+
+- Beverages
+
+- Beer, wine, fruit juice (gelatin for clarity)
+
+- Other products
+
+- Cigarettes with hemoglobin filters
+
+\(\downarrow\) Creates an artificial lung in the filter for a healthier cigarette
+
+- Injectable collagen for wrinkles
+
+- Bullets
+
+- Heart valve implants
+
+\(\downarrow\) Director did not want the product associated with pigs to maintain its high-tech image
+
+- Renewable energy (fuel from unused pig parts)
+
+- Conclusion
+
+- 185 products found containing pig parts
+
+- Importance of knowing what products are made of
+
+- Taking better care of raw materials and producers
+
+Figure 5: The detailed process of an iteration in the plan extraction stage
+
+## References
+
+Figure 6: **Topic: This is your brain on communication**. Neuroscientist Uri Hasson researches the basis of human communication, and experiments from his lab reveal that even across different languages, our brains show similar activity, or become aligned,when we hear the same idea or story. This amazing neural mechanism allows us to transmit brain patterns, sharing memories and knowledge. We can communicate because we have a common code that presents meaning,Hasson says.
+
+## References
+
+Figure 7: **Topic: Discover the physical side of the internet**. When a squirrel chewed through a cable and knocked him offline, journalist Andrew Blum started wondering what the Internet was really made of. So he set out to go see it – the underwater cables, secret switches and other physical bits that make up the net.
+
+Figure 8: **Topic: Growing new organs**. Anthony Atala’s state-of-the-art lab grows human organs – from muscles to blood vessels to bladders, and more. At TEDMED, he shows footage of his bio-engineers working with some of its sci-fi gizmos, including an oven-like bioreactor (preheat to 98.6 F) and a machine that printshuman tissue.
+
+[MISSING_PAGE_EMPTY:22]
+
+# QASiNa: Religious Domain Question Answering using Sirah Nabawiyah
+
+Muhammad Razif Rizqullah\({}^{1}\), Ayu Purwarianti\({}^{1}\), Alham Fikri Aji\({}^{2}\)
+
+\({}^{1}\)School of Electrical Engineering and Informatics
+
+Bandung Institute of Technology. Bandung, Indonesia
+
+razifrizqullah@gmail.com, ayu@stei.itb.ac.id
+
+\({}^{2}\)Mohamed bin Zayed University of Artificial Intelligence
+
+Abu Dhabi, UAE
+
+alham.fikri@mbzuai.ac.ae
+
+###### Abstract
+
+Nowadays, Question Answering (QA) tasks receive significant research focus, particularly with the development of Large Language Model (LLM) such as Chat GPT [1]. LLM can be applied to various domains, but it contradicts the principles of information transmission when applied to the Islamic domain. In Islam we strictly regulates the sources of information and who can give interpretations or tafscer for that sources [2]. The approach used by LLM to generate answers based on its own interpretation is similar to the concept of tafscer, LLM is neither an Islamic expert nor a human which is not permitted in Islam. Indonesia is the country with the largest Islamic believer population in the world [3]. With the high influence of LLM, we need to make evaluation of LLM in religious domain. Currently, there is only few religious QA dataset available and none of them using Sirah Nabawiyah especially in Indonesian Language. In this paper, we propose the Question Answering Sirah Nabawiyah (QASiNa) dataset, a novel dataset compiled from Sirah Nabawiyah literatures in Indonesian language. We demonstrate our dataset by using mBERT [4], XLM-R [5], and IndoBERT [6] which fine-tuned with Indonesian translation of SQuAD v2.0 [7]. XLM-R model returned the best performance on QASiNa with EM of 61.20, F1-Score of 75.94, and Substring Match of 70.00. We compare XLM-R performance with Chat GPT-3.5 and GPT-4 [1]. Both Chat GPT version returned lower EM and F1-Score with higher Substring Match, the gap of EM and Substring Match get wider in GPT-4. The experiment indicate that Chat GPT tends to give excessive interpretations as evidenced by its higher Substring Match scores compared to EM and F1-Score, even after providing instruction and context. This concludes Chat GPT is unsuitable for question answering task in religious domain especially for Islamic religion.
+
+ question answering, low resources, religious domain, mBERT, XLM-R, IndoBERT, Chat GPT, QASiNa
+
+## I Introduction
+
+Question answering is a task that closely aligns with everyday human behavior based on the theory of mind [8]. In daily human interactions, discussions are conducted to exchange information, starting with one person providing a statement or question, followed by response or answer. Currently, question answering methods have significantly advanced, including rule-based approaches, extractive language models utilizing reading comprehension, and Large Language Model (LLM) with generative approach. These methods are commonly employed for general question answering problem, but there is limitations when applied to specific domains such as the religious domain, especially Islamic religion.
+
+Indonesia is the country with the largest Islamic believer (moslem) population in the world. According to Annur [3] on the "katadata" website, the moslem population is 237.558 million people, 86.7% from total population, based on a survey conducted by The Royal Islamic Strategic Studies Centre (RISSC) in 2023. The primary direct references for moslem are the Holy Qur'an and Sunnah from Book of Hadith [9]. In addition to these two primary sources, Sirah Nabawiyah (Prophetic Biography) serves as another important reference because it contains message, vision, mission, and historically activities to support both primary references [10]. Sirah Nabawiyah contains comprehensive explanation about history of Islam from before the birth of Prophet Muhammad until his passing and the continuation of Islamic preaching.
+
+According to Solahudin [2], interpretation or reasoning methods in Islamic information sources can be divided into two types, contextual and textual reasoning. Contextual reasoning requires extensive and comprehensive knowledge which requires learning process under supervision of experts, examination, and scholarly validation. On the other hand, textual reasoning is a method that involves extracting information directly from the context without providing interpretation.
+
+With current huge influence of LLM in daily basis, a country with the largest moslem population will face a problem because LLM works by giving its own interpretation using next token prediction. Islamic resource interpretation for public
+
+Fig. 1: Example of context, question, and answer in QASiNa datasetaudience is called tafseer. Based on tafseer rule in Islam, tafseer can only be given by a person who specialized at it [11]. Islamic society need a way to evaluate how far the interpretation given by LLM. In this paper, we conduct a research to measure textual reasoning performance of LLM Chat GPT [1] compared to extractive languages models to answer religious QA with given context.
+
+Previous research of question answering task in Islamic domain has utilized information from the Holy Qur'an [12][13][14][15][16][17][18], Book of Hadith [19][20], Islamic fatwa websites [21][22], with only a few addressing Islamic history [23]. Most of them are in Arabic language and none have used literature of the Indonesian Sirah Nabawiyah.
+
+In this research, we propose a new dataset to undertake the limitation of resources, especially in Indonesian language and the usage of Sirah Nabawiyah as source of information. There are three main outcomes of this research: 1) New dataset consisting of 500 question-answer pairs from 66 different contexts about Sirah Nabawiyah; 2) Evaluation of the extractive question answering using language models with transfer learning; and 3) Evaluate the performance of Chat GPT when answering extractive question in religious domain.
+
+## II Related Works
+
+This section presents overview of question answering methods, datasets, related question answering in religious domain, and transfer learning technique.
+
+### _Question Answering_
+
+The processing of information in computers until the stage where computers can perform tasks like humans is one of the goals for successful artificial intelligence [8]. One of the common information exchange processes performed by humans is discussion, which is similar to question answering task. There are several methods that can be used for the question answering task, namely rule-based, extractive, and generative.
+
+Based on studies of rule-based question answering [12][15][19][20], the working principle of rule-based approach revolves around obtaining answers using predefined patterns. Extractive method has been conducted in several studies [21][13]. The extractive method utilizes context or passage, questions, and answers, where the answers are obtained from the context in the form of answer spans. The generative method which used by LLM [1], differs from extractive methods because LLM can answer questions with or without context. The generative model provides answers based on the information it has been trained on. In this research we evaluate the performance of extractive question answering using IndoBERT [6], XLM-R [5], mBERT [4] and generative model Chat GPT [1].
+
+### _Religious Domain Question Answering_
+
+Research on the religious domain is a sensitive matter because all of the informations must align with approved sources by all followers [24]. Therefore, conducting research on the use of AI in the field of religion, especially Islam, is both intriguing and challenging. Several previous studies have been conducted on question answering in the religious domain.
+
+Holy Qur'an used by Abdelhasser et al. [12] to develop a QA dataset called Al-Bayan in Arabic language. Malhas et al. [13] examined the Qur'anic Reading Comprehension Dataset (QRCD) from the Qur'an in Arabic. This study [13] was an extension of a previous work by Malhas and Elsayed [14] on Ayatec, a reusable verse-based test QA collection of Qur'an in Arabic. Alqahtani and Atwell [15] researched an ontology dataset called the Arabic Quranic Question and Answer Corpus (AQQC). Sunnah from Book of Hadith used by Abdi et al. [19] to explore the use of Sahih al-Bukhari in Arabic for QA using semantic, word-order, and sentence similarity. Neamah and Saad [20] investigated the usage of Sahih al-Bukhari in English for QA, employing cosine similarity, longest common subsequence, and support vector machine (SVM). Web resources used by Munshi et al. [21] for QA of fatwa system, using question-answer data from Arabic fatwa websites. Mohammed et al. [22] investigated the English Islamic Article Dataset (EIAD) for Islamic chatbot.
+
+Indonesian translation of Holy Qur'an used by Gusmita et al. [16] for rule-based question answering for the translation of the Holy Qur'an, which was later expanded by Sukmana et al. [17] for the semantic annotated corpus method. The resulting corpus was then utilized by Putra et al. [18] for semantic question answering using the inverted index method to search for answer candidates. Named entity recognition and feature extraction were employed to obtain the best verse and answer. Historical literature used by Naf'an et al. [23] to examine unanswerable question answering using Khulafaa Al-Rashidin History in the Indonesian language, employing search methods and answer candidate ranking.
+
+Other than Islamic domain, Zhao and Liu [25] conducted research about Bible and created a BibleQA based on Bible trivia questions. Only a small number of QA research on religious domain exists other than Islamic, because Islam has strict rules regarding information transmission and interpretation, an interesting topic to research.
+
+Previous studies in Islamic religion have focused primarily on the Holy Qur'an, Hadith literature, and website information, with a small number of research conducted on utilizing historical material or Sirah Nabawiyah. To tackle the data limitation, in this research we utilize literature from the Indonesian language of Sirah Nabawiyah to make a new dataset.
+
+### _Transfer Learning for Low Resources_
+
+Developing a model from scratch using data in a specific domain requires significant time and resources. Therefore, transfer learning is employed [26]. Transfer learning is a machine learning technique where a model is trained on a larger dataset from a more general domain, and then the model is evaluated on a more specific domain. Previous research on question answering has utilized transfer learning methods, with the use of language models such as BERT [27], RoBERTa[28], and IndoBERT [29]. The results have shown that transfer learning can effectively answer questions in specific domains.
+
+In this study, we propose a new dataset focused on information from the Sirah Nabawiyah which has low resources of data. Hence, we employ transfer learning methods for model training. We utilize mBERT [4], XLM-R [5], and IndoBERT [6] with transfer learning from Indonesian translation of SQuAD v2.0 (SQuAD-ID) [7].
+
+## III Question Answering Sirah Nabawiyah Dataset
+
+This section presents methods to build the Question Answering Sirah Nabawiyah (QASiNa) dataset which is available to be accessed from public repository1. The process starts from data acquisition, context retrieval, question and answer generation, and dataset validation.
+
+Footnote 1: [https://github.com/rizquulu/QASiNa](https://github.com/rizquulu/QASiNa)
+
+### _Data Acquisition_
+
+We select the data sources by searching for research literature on the Sirah Nabawiyah from various campus repositories, primarily from Islamic universities in Indonesia. The chosen literature meets specific criteria: 1) It is a valid and reliable source, proven by its publication through academic mechanisms, and 2) It is publicly accessible, allowing us to share its content in the form of the QASiNa dataset. In this phase, we obtained 9 literature sources, as detailed in Table I.
+
+### _Context Retrieval_
+
+We select contexts from each literature source and each context constitutes a complete story containing various facts within it and manually choose these contexts. Each context consists of multiple sentences and paragraphs, with the length ranging from 500 to 2000 characters. At this stage, we have obtained 66 contexts that will proceed to the question and answer generation phase. We carefully maintain a wide diversity of topics covered. We start by providing historical context, beginning with the history of the Arab region, the surrounding kingdoms, and their culture before the birth of Prophet Muhammad SAW. We also include historical context covering Muhammad SAW's early years, becoming a Prophet and building a country, and the period after the Prophet's passing.
+
+### _Question and Answer Generation_
+
+To make the process of initial question and answer pair generation faster, we use machine assistance rather than creating question and answer pairs manually. Similar approach has been conducted in the past for the creation of dataset Indo-SQuAD v2.0 [7] using machine translation and IDK-MRC [39] with the aid of a question generation model. In this study, we utilized a generative model Chat GPT-3.5 to generate initial question and answer pairs. We limited the generated results to 500 question and answer pairs. These question and answer pairs are not considered valid data as they were generated by a machine. Therefore, we proceeded to manually validate the data with the assistance of domain experts.
+
+### _Dataset Validation_
+
+We employ domain experts to validate the context, question, and answer pairs generated by the machine. To ensure the quality of the validation process, each expert must meet the following criteria: 1) Expert is is Islamic believer; 2) Possess proficiency in the Indonesian language with good grammar and vocabulary; 3) Have done intensive study of Islamic knowledge, either formally and informally for a minimum of two years; and 4) Demonstrate a comprehensive understanding of context in Sirah Nabawiyah.
+
+We use some steps in dataset validation including consistency testing of validator performance by doing cross validation as shown in Fig. 2. The validation process begins by dividing 500 context-question-answer pairs into five different dataset parts (A, B, C, D, and E), each part containing the same number of data. These dataset parts are then duplicated (F, G, H, I, and J). Each original has the same content with corresponding duplicate: A with F, B with G, C with H, D with I, and E with J. Each expert validates one original data and one duplicated data with different content. This approach facilitates cross-validation to maintain consistency in the dataset.
+
+Validation process assisted by five experts, each validator does their task in one week. Once all of the data has been validated by the experts, we proceed to evaluate the data checking the answer similarity. We compare the validation result, fixed small typo by ourselves, 4.2% of the data have non similar answer, we use discussion mechanisms with related experts to determine the correct answer. The final outcome of this process is a set of 500 context-question-answer pairs that have been validated by the experts.
+
+### _Dataset Content_
+
+The final result of QASiNa dataset is a JSON array file, containing 66 data based on context, example of data is shown on Fig. 1. Each context has attributes context_id, context, question_answers, and context_length. The context length is the number of characters in context, ranges from minimum of 713 to maximum of 1999, with mean of 1629.5 and median of 1689.5. Within each context data, there are several question-answer pairs, which each question-answer pair has attributes type, question, answer, and answer_start. There are five types of questions: what, when, where, who, and how many, with the distribution of question types shown in Table II.
+
+## IV Evaluation
+
+We evaluate the dataset using the transfer learning approach with mBERT, XLM-R, and IndoBERT with also test the Chat GPT-3.5 and GPT-4. The evaluation metrics used in this evaluation are Exact Match (EM), F1-Score, and Substring Match evaluation. We choose the Substring Match evaluation to assess the interpretations made by Chat GPT. Substring Match metric assigns a True value if the label is a substring of the generated answer and otherwise is False.
+
+### _Transfer Learning_
+
+We chose mBERT [4], XLM-R [5], and IndoBERT [6] for extractive question answering tasks in Indonesian Language. The tools used are 16 GB Kaggle GPU P100, Huggingface Trainer with AutoModelForQuestionAnswering and WandB for monitoring. To fine-tune the selected language models, we use tokenized context and question using each language model tokenizer as input, then the label is answer token position in the context. We use training data from Indonesian translation of SQuAD v2.0 (SQuAD-ID) [7] and conducted grid search hyperparameters tuning, the used parameters are learning rate of 2e-5 and 2e-6, batch sizes of 8 and 16, weight decay of 0.01, and 5 epochs. The best fine-tuned model from each language model is selected by the highest EM score.
+
+We evaluate fine-tuned mBERT, XLM-R, and IndoBERT with SQuAD-ID test set and QASiNa dataset. In addition, we also conducted comparative testing by randomly sampling an equal number of 500 data from the SQuAD-ID test set with random_state=0, namely 500 SQuAD-ID. The evaluation results of the fine-tuned model are presented in Table III.
+
+The best model selected based on the highest EM score, as in the religious domain, precise answers without any interpretation or excessive information are prioritized. We use scaling from 0 to 100 for the evaluation metrics.
+
+The XLM-R model outperforms other models for the QASiNa dataset, achieving an EM score of 61.20, which is
+
+Fig. 2: Dataset validation diagram 2.80 points higher than mBERT and 18.80 points higher than IndoBERT. The F1-score and Substring Match also indicate that the XLM-R model yields the highest score on both. From each language model, we can see that the F1-Score values are lower than the Substring Match values, indicating that interpretation performed by the language model is low. This F1-score and Substring Match comparison will be further analyzed using Chat GPT-3.5 and GPT-4 in Subsection IV-B.
+
+We use XLM-R to evaluate QASiNa dataset based on available question types. From the experiments in Table IV, we can see that the EM scores range from the lowest for the "when" question type at 55.00 to the highest for the "who" question type at 65.49. The difference between the highest and lowest values for each evaluation metric is 10.49 for EM, 7.08 for F1-Score, and 12.93 for Substring Match. The difference range of the scores are not excessively high, indicating data for each question type is good.
+
+### _Generative Model with Chat GPT_
+
+The utilization of ChatGPT continues to grow across a wide range of domains, including the religious domain. One of the objectives of QASiNa is to assess ChatGPT's reasoning capabilities for questions within the context of the Sirah Nabawiyah, in the task of extractive question answering. The outcomes of this evaluation will be compared with the abilities of language models that were evaluated in the Subsection IV-A. We conduct testing on the ability of Chat GPT using API gpt-3.5-turbo and gpt-4 to answer questions with given context in extractive way. Our ChatGPT prompt consists of instruction, context, and question, so the Chat GPT will return the answer as given instruction. We use Python 3 to call Chat GPT API with prompt as the following code.
+
+Table V is complete results of the evaluation using Chat GPT and the comparison with XLM-R. Due to the limited resources we didn't evaluate using all of the SQuAD-ID dataset, we use sampled 500 SQuAD-ID and QASiNa dataset in this experiment. We can observe that for both Chat GPT-3.5 and GPT-4, the EM and F1-score are lower than Substring Match, which means there are many other words present besides the actual answer. This concludes that providing extractive instructions is not sufficient to make the generative LLM produce extractive answers. Chat GPT intends to do excessive interpretations, while interpretation within the context of religious domains by the AI is prohibited. This experiment lead us to the conclusion that current Chat GPT (gpt-3.5-turbo and gpt-4) is not suitable for finding extractive answers for questions related to religious domain.
+
+## V Conclusion and Future Works
+
+We create a new dataset named Question Answering Sirah Nabawiyah (QASiNa) dataset, which employs a previously unexplored domain, Sirah Nabawiyah in the Indonesian language. To evaluate the language models, we conducted testing using the transfer learning approach for language models with mBERT [4], XLM-R [5], and IndoBERT [6]. We also evaluate the performance of LLM Chat GPT (gpt-3.5-turbo and gpt-4) [1] to solve QASiNa dataset.
+
+By using three language models with data from SQuAD-ID [7], randomly sampled 500 SQuAD-ID and QASiNa dataset concludes XLM-R as the best model. We also evaluated Chat GPT-3.5 and GPT-4 by providing instruction prompt for extractive answers based on the given context. The conclusion drawn from this evaluation was that the EM and F1-scores of Chat GPT are lower compared to XLM-R, on the other side Chat GPT has high Substring Match score. This experiment concludes that Chat GPT tends to provide excessive interpretations even after providing the context of question.
+
+Research on question answering in the religious domain remains relatively rare, making it an intriguing field, especially in the current LLM's competitions. Conducting QA research in the religious domain highlights the presence of a domain-specific set of issues that needs further attention, especially when the religious domain has strict rule about giving interpretation. This emphasizes the need for technological advancements to ensure the preservation of the values held by religious community. Further studies to advance this research could involve increasing the dataset size and variations of LLM to be analyzed. Furthermore, we can do research about way to make LLM better at answering religious QA, methods like In Context Learning and context-based token filtering are interesting topics. Finally, we intend to make the proposed QASiNa dataset publicly available to the research community.
+
+## Acknowledgment
+
+The authors thank the Indonesia Endowment Fund for Education (LPDP) for funding this research. We also thank to the domain experts who have assisted in validating the datasets.
+
+[MISSING_PAGE_POST]
+
+ Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [19]A. A. Abdi, S. Hasan, M. Arshi, S. M. Shamsuddin, and N. Idris (2020) A question answering system in hadith using linguistic knowledge. Computer Speech & Language60, pp. 101023. Cited by: SSII-A.
+* [20]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [21]A. A. Abdi, S. Hasan, M. Arshi, S. M. Shamsuddin, and N. Idris (2020) A question answering system in hadith using linguistic knowledge. Computer Speech & Language60, pp. 101023. Cited by: SSII-A.
+* [22]A. A. Abdi, V. A. F. W. Ismail, A. S. Baharddin, M. F. Mohamed, K. Wafa, et al. (2019) Scientific exegesis of al-quran and its relevance in dealing with contemporary issues: an appraisal on the book of 'al-jawahwin' fit asif ai-quran' al-kirim. International Journal of Recent Technology and Engineering. Cited by: SSII-A.
+* [23]A. A. Abdi, S. Hasan, M. Arshi, S. M. Shamsuddin, and N. Idris (2020) A question answering system in hadith using linguistic knowledge. Computer Speech & Language60, pp. 101023. Cited by: SSII-A.
+* [24]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [25]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [26]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [27]A. A. Abdi, V. A. F. W. Ismail, A. S. Baharddin, M. F. Mohamed, K. Wafa, et al. (2019) Scientific exegesis of al-quran and its relevance in dealing with contemporary issues: an appraisal on the book of 'al-jawahwin' fit asif ai-quran' al-kirim. International Journal of Recent Technology and Engineering. Cited by: SSII-A.
+* [28]A. A. Abdi, S. Hasan, M. Arshi, S. M. Shamsuddin, and N. Idris (2020) A question answering system in hadith using linguistic knowledge. Computer Speech & Language60, pp. 101023. Cited by: SSII-A.
+* [29]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [30]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [31]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [32]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [33]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [34]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [35]A. A. Abdi, S. Hasan, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [36]A. A. Abdi, S. Aslami, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [37]A. A. Abdi, S. Aslami, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [38]A. A. Abdi, S. Aslami, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [39]A. A. Abdi, S. Aslami, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [40]A. A. Abdi, S. Aslami, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [41]A. A. Abdi, V. A. F. W. Ismail, A. S. Baharddin, M. F. Mohamed, K. Wafa, et al. (2019) Scientific exegesis of al-quran and its relevance in dealing with contemporary issues: an appraisal on the book of 'al-jawahwin' fit asif ai-quran' al-kirim. International Journal of Recent Technology and Engineering. Cited by: SSII-A.
+* [42]A. A. Abdi, S. Aslami, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [43]A. A. Abdi, S. Aslami, and S. AAD (2020) Question answering system supporting vector machine method for hadith domain. Journal of Theoretical & Applied Information Technology95 (7). Cited by: SSII-A.
+* [44]A. A. Abdi, S. Aslami, and S. AAD (2020) Textual domain search: a review of text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based text-based-text-
