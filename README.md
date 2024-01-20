@@ -60,6 +60,7 @@ MMAPIS/
         ├── tts_helper.py
 │   └── chatgpt/              # ChatGPT tool for various processing tasks
         ├── chatgpt_helper.py
+        ├── gpt4_helper.py
 │
 ├── server/                   # Main server-side system
 │   ├── preprocessing/        # Preprocessing functionalities
