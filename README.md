@@ -51,15 +51,14 @@ MMAPIS/
 │
 ├── tools/                    # Independent tools and utilities
 │   ├── arxiv_extractor/      # Tool for fetching documents from arXiv
-        ├── arxiv_extractor.py
+        ├── arxiv_helper.py
 │   ├── nougat/               # Nougat tool for rich text and formula extraction
         ├── nougat_helper.py
 │   ├── pdffigure/            # PDFigure tool for image and table extraction
         ├── pdffigure_helper.py
 │   ├── tts/                  # Text-to-Speech conversion tool
         ├── tts_helper.py
-│   └── chatgpt/              # ChatGPT tool for various processing
- tasks
+│   └── chatgpt/              # ChatGPT tool for various processing tasks
         ├── chatgpt_helper.py
 │
 ├── server/                   # Main server-side system
