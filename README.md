@@ -43,7 +43,57 @@ Pending.
 Please refer to [tech report](https://arxiv.org/abs/2401.09150) for more analysis results.
 
 # 📋Project Framework
-    pending.
+```
+MMAPIS/
+│
+├── config/                   # Configuration files
+│   └── config.yaml             # Main configuration file
+│
+├── tools/                    # Independent tools and utilities
+│   ├── arxiv_extractor/      # Tool for fetching documents from arXiv
+        ├── arxiv_extractor.py
+│   ├── nougat/               # Nougat tool for rich text and formula extraction
+        ├── nougat_helper.py
+│   ├── pdffigure/            # PDFigure tool for image and table extraction
+        ├── pdffigure_helper.py
+│   ├── tts/                  # Text-to-Speech conversion tool
+        ├── tts_helper.py
+│   └── chatgpt/              # ChatGPT tool for various processing
+ tasks
+        ├── chatgpt_helper.py
+│
+├── server/                   # Main server-side system
+│   ├── preprocessing/        # Preprocessing functionalities
+│   │   ├── document_fetcher.py   # Script for fetching documents
+│   │   ├── rich_text_extractor.py # Script for extracting rich text and formulas
+│   │   ├── image_table_extractor.py # Script for extracting images and tables
+│   │   └── alignment.py      # Script for aligning different modalities
+│   │
+│   ├── summarization/        # Two-stage summarization process
+│   │   ├── chunk_summarizer.py   # Script for summarizing individual chunks
+│   │   └── summary_integrator.py # Script for integrating chunk summaries
+│   │
+│   └── downstream/           # Downstream functionalities
+│       ├── paper_recommendation/ # Paper recommendation module
+│       │   ├── recommendation.py
+│       │   └── original_text.py
+│       ├── multimodal_qa/        # Multimodal Question and Answer module
+│       │   ├── user_intent.py
+│       │   └── answer_generation.py
+│       ├── audio_broadcast/      # Audio broadcast module
+│       │   ├── script_conversion.py
+│       │   └── tts_integration.py
+│       └── blog_generation/      # Blog generation module
+│           ├── blog_script.py
+│           └── image_integration.py
+│
+└── client/                   # Client-side visualization interface
+    ├── input/                # Input processing
+    ├── processing/           # Data processing
+    ├── output/               # Output presentation
+    └── display/              # UI display elements
+
+```
 
 # 🚀How to Run
     pending.
