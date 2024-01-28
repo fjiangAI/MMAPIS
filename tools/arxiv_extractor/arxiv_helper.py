@@ -30,15 +30,6 @@ class ArxivCrawler(CrawlerBase):
                          order='-announced_date_first',
                          size=50,
                             ):
-        """
-        Search for articles on arXiv matching the query.
-
-        :param query: A string representing the search query.
-        :param max_results: Maximum number of results to return.
-        :return: A list of articles (dictionaries or custom objects) matching the query.
-        """
-        # Implement the search functionality
-        # This could involve sending a request to arXiv's search API
         if not key_word:
             return self.get_daily_data()
 
@@ -213,16 +204,12 @@ class ArxivCrawler(CrawlerBase):
         return articles
 
 
-    def download_pdf(self, article_url, file_path):
-        """
-        Download the PDF of a specific article.
 
-        :param article_id: The identifier for the article on arXiv.
-        :param file_path: The local file path where the PDF should be saved.
-        :return: Boolean indicating success or failure of the download.
-        """
-        # Implement the functionality to download the PDF
-        # This would involve fetching the PDF from a specific URL and saving it locally
+
+    def download_pdf(self,
+                    article_url: str,
+                    file_path: str,
+                    ):
         response = self.get_response(article_url)
         if response.status_code == 200:
             with open(file_path, 'wb') as f:
@@ -315,4 +302,5 @@ if __name__ == "__main__":
     for d_article in daily_articles:
         print(d_article)
     arxiv.download_pdf(d_article.pdf_url, f"{d_article.pdf_url.split('/')[-1]}.pdf")
+
 

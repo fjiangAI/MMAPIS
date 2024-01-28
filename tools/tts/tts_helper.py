@@ -1,4 +1,5 @@
-
+# Assuming 'nougat' is a library for processing PDFs into rich text formats
+# import nougat
 
 class NougatHelper:
     def __init__(self):

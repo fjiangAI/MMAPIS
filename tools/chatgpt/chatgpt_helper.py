@@ -19,12 +19,7 @@ class GPT_Helper(LLMSummarizer):
                  model_config:dict={},
                  proxy:dict = None,
                  **kwargs):
-        """
-        Initialize the ChatGPT helper with necessary credentials and settings.
 
-        :param api_key: API key for authenticating with the ChatGPT service.
-        :param base_url: Base URL of the ChatGPT API service.
-        """
         super().__init__(api_key=api_key, base_url=base_url, model_config=model_config, proxy=proxy, **kwargs)
 
 
@@ -183,8 +178,6 @@ class GPT_Helper(LLMSummarizer):
 
 
 
-
-
     def summarize_text(self,
                        text:str,
                        system_messages:Union[str,List[str]] = "",
@@ -192,7 +185,6 @@ class GPT_Helper(LLMSummarizer):
                        reset_messages:bool = True,
                        return_the_same:bool = False,
                        ):
-
         """
         Use ChatGPT to summarize a given text.
 
@@ -283,5 +275,8 @@ if __name__ == "__main__":
     
     chatgpt = GPT_Helper(api_key=api_key, base_url=base_url, model_config=model_config)
     print(chatgpt)
-    summary = chatgpt.summarize_text("This is a test", system_messages="This is a test",reset_messages=False,response_only=False)
-    print(summary)
+    flag,summary = chatgpt.summarize_text("This is a test", system_messages="This is a test",reset_messages=False,response_only=False)
+    if flag:
+        print("summary: ", summary)
+    else:
+        print("error:",summary)
