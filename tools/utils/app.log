@@ -1,0 +1,6 @@
+2023-10-21 20:17:08 - DEBUG - loggers.py:18 - This is a debug message from foo
+2023-10-21 20:17:08 - INFO - loggers.py:21 - This is an info message from bar
+2023-10-21 20:18:38 - DEBUG - loggers.py:18 - This is a debug message from foo
+2023-10-21 20:18:38 - INFO - loggers.py:21 - This is an info message from bar
+2023-10-21 20:46:06 - INFO - loggers.py:24 - Calling function: test()
+2023-10-21 20:46:06 - ERROR - decorators.py:10 - divide_numbers error: division by zero

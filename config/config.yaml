@@ -1,0 +1,36 @@
+arxiv:
+  proxy:
+    http: 'http://127.0.0.1:7890'
+    https: 'http://127.0.0.1:7890'
+    ftp: 'ftp://127.0.0.1:7890'
+    host: 'http://localhost:7890'
+  headers:
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0"
+  key_word: "https://arxiv.org/search/?searchtype=all&query=Computer+Vision+and+Pattern+Recognition&abstracts=show&size=200&order=submitted_date&start=9800" # if daily, set null
+
+openai:
+  api_key: "sk-nRjm3MuSfJ9yoDZu987f9f8c0b014052B463046c0587B01c"
+  prompts_path:
+    './prompts_config.json'
+  ignore_title: ["references","appendix","acknowledg"]
+  base_url: "https://api.ai-gaochao.cn/v1"
+  rpm_limit: 0
+  num_processes: 6
+  prompt_ratio: 0.8
+  model_config:
+    model: "gpt-3.5-turbo-16k-0613"
+    temperature: 0.5
+    max_tokens: 16385
+    top_p: 1.0
+    frequency_penalty: 0.1
+    presence_penalty: 0.2
+
+nougat:
+  check_point : "./pretrained_w"
+  out: "./res/cs_2017"
+  pdf : ["./data/222.pdf","./data/111.pdf"] # pdf file path,list
+
+tts:
+  base_url: "https://openapi.youdao.com/ttsapi"
+  api_key: '21a52d8cbabd6256'
+  app_secret: 'MYttHedJuswCG6CNoyhd5YWH5egzQPSa'

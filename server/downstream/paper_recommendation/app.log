@@ -1,0 +1,20 @@
+2024-01-24 17:42:26 - INFO - root - loggers - init_logging - loggers.py:12 - Loading logging file from /Users/ke/workshop/code_pytorch/MMAPIS/config/logging.ini
+2024-01-24 17:42:26 - INFO - root - recommendation - <module> - recommendation.py:52 - Initializing Paper Recommender
+2024-01-24 17:42:27 - INFO - root - section_class - get_title_contributors - section_class.py:197 - article :None,parse author and affiliation with latex format successfully
+2024-01-24 17:42:49 - INFO - root - loggers - init_logging - loggers.py:12 - Loading logging file from /Users/ke/workshop/code_pytorch/MMAPIS/config/logging.ini
+2024-01-24 17:42:49 - INFO - root - recommendation - <module> - recommendation.py:52 - Initializing Paper Recommender
+2024-01-24 17:42:50 - INFO - root - section_class - get_title_contributors - section_class.py:197 - article :None,parse author and affiliation with latex format successfully
+2024-01-24 17:43:57 - INFO - root - loggers - init_logging - loggers.py:12 - Loading logging file from /Users/ke/workshop/code_pytorch/MMAPIS/config/logging.ini
+2024-01-24 17:43:57 - INFO - root - recommendation - <module> - recommendation.py:52 - Initializing Paper Recommender
+2024-01-24 17:43:58 - INFO - root - section_class - get_title_contributors - section_class.py:199 - article :None,parse author and affiliation with latex format successfully
+2024-01-24 17:46:19 - INFO - root - loggers - init_logging - loggers.py:12 - Loading logging file from /Users/ke/workshop/code_pytorch/MMAPIS/config/logging.ini
+2024-01-24 17:46:19 - INFO - root - recommendation - <module> - recommendation.py:52 - Initializing Paper Recommender
+2024-01-24 17:46:20 - INFO - root - section_class - get_title_contributors - section_class.py:199 - article :None,parse author and affiliation with latex format successfully
+2024-01-24 17:53:10 - INFO - root - loggers - init_logging - loggers.py:12 - Loading logging file from /Users/ke/workshop/code_pytorch/MMAPIS/config/logging.ini
+2024-01-24 17:53:10 - INFO - root - recommendation - <module> - recommendation.py:52 - Initializing Paper Recommender
+2024-01-24 17:54:50 - INFO - root - loggers - init_logging - loggers.py:12 - Loading logging file from /Users/ke/workshop/code_pytorch/MMAPIS/config/logging.ini
+2024-01-24 17:54:50 - INFO - root - recommendation - <module> - recommendation.py:52 - Initializing Paper Recommender
+2024-01-24 17:54:51 - INFO - root - section_class - get_title_contributors - section_class.py:199 - article :None,parse author and affiliation with latex format successfully
+2024-01-24 18:00:17 - INFO - root - loggers - init_logging - loggers.py:11 - Loading logging file from /Users/ke/workshop/code_pytorch/MMAPIS/config/logging.ini
+2024-01-24 18:00:17 - INFO - root - recommendation - <module> - recommendation.py:52 - Initializing Paper Recommender
+2024-01-24 18:00:17 - INFO - root - section_class - get_title_contributors - section_class.py:199 - article :None,parse author and affiliation with latex format successfully
