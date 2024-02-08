@@ -43,7 +43,7 @@ def get_best_gpu(choice_list=None):
 
 def get_batch_size():
     if torch.cuda.is_available():
-        best_gpu, free_memory = get_best_gpu([0, 1])
+        best_gpu, free_memory = get_best_gpu([0])
         BATCH_SIZE = int(
             free_memory * 0.3
         )
@@ -51,12 +51,12 @@ def get_batch_size():
         #     torch.cuda.get_device_properties(0).total_memory / 1024 / 1024 / 1000 * 0.3
         # )
         logging.info(f"Best GPU: {best_gpu}. Batch size: {BATCH_SIZE}")
-        if BATCH_SIZE < 1:
-            logging.error("Not enough GPU memory, can not load model.")
-            sys.exit(1)
+        if BATCH_SIZE == 0:
+            logging.warning("GPU VRAM is too small. Computing on CPU.")
+
     else:
         # don't know what a good value is here. Would not recommend to run on CPU
-        BATCH_SIZE = 5
+        BATCH_SIZE = 1
         logging.warning("No GPU found. Conversion on CPU is very slow.")
     return BATCH_SIZE
 
@@ -113,14 +113,12 @@ def get_pdf_doc(pdf,proxy=None,headers=None,pdf_name=None):
 def _(pdf,proxy=None,headers=None,pdf_name=None):
 
     if "http" in pdf:
-        logging.info(f"Opening PDF to rasterize from url format")
         name = pdf.split("/")[-1].replace('.', '_')
         # self.size = len(fitz.open(stream=urllib.request.urlopen(pdf).read(), filetype="pdf"))
         pdf_doc_obj = fitz.open(stream=requests.get(pdf, proxies=proxy, headers=headers).content, filetype="pdf")
         size = len(pdf_doc_obj)
 
     else:
-        logging.info(f"Opening PDF to rasterize from str format")
         name = pdf.split("/")[-1]
         pdf_doc_obj = fitz.open(Path(pdf), filetype="pdf")
         size = len(pdf_doc_obj)

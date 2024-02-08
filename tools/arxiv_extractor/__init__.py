@@ -1,3 +1,3 @@
-from .arxiv_helper import  ArxivCrawler
+from .arxiv_crawler import  ArxivCrawler
 
 __all__ = ['ArxivCrawler']

@@ -22,7 +22,7 @@ import  sys
 import  requests
 from typing import Union
 from datetime import datetime
-from submodule.my_utils import get_pdf_doc
+from MMAPIS.tools.utils import get_pdf_doc
 sys.path.append(os.path.abspath(os.path.join(__file__,"../../dataset")))
 
 # from nougat.dataset.rasterize import rasterize_paper

@@ -701,7 +701,6 @@ def parsePDF_PDFFigures2(pdf_file: str):
     _ = subprocess.run(
         args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20
     )
-    print("exist TEMP_DIR dir:",os.path.exists(TEMP_DIR),"file:",os.path.exists(op.join(TEMP_DIR, op.basename(pdf_file).replace(".pdf", ".json"))))
     try :
         return json.load(open(op.join(TEMP_DIR, op.basename(pdf_file).replace(".pdf", ".json")),"rb"))
     except Exception as e:

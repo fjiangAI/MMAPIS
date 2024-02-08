@@ -90,9 +90,11 @@ class PDFFigureExtractor:
         img_dict = self.pdf_parser.get_section_imagedict(
             snap_with_caption=snap_with_caption, verbose=verbose)
         res_img_ls = []
-        for name in section_names[:-1]:
+        for i,name in enumerate(section_names[:-1]):
             img_ls = img_dict.get(name)
             name = strip_title(name)
+            if not name:
+                name = f"unknown_section_{i}"
             res_img_ls.append(SectionFigures(img_data=[], section_name=name))
             if img_ls:
                 for img in img_ls:
@@ -127,7 +129,8 @@ class PDFFigureExtractor:
             else:
                 img_paths = []
                 for section_imgs in img_ls:
-                    section_name = strip_title(section_imgs.section_name)
+                    # section_name = strip_title(section_imgs.section_name)
+                    section_name = section_imgs.section_name
                     img_paths.append(SectionIMGPaths(img_path=[], section_name=section_name))
                     for i,img in enumerate(section_imgs.img_data):
                         img_path = os.path.join(save_dir, f"{section_name}_{i}.png")
@@ -143,7 +146,7 @@ class PDFFigureExtractor:
 
 # Example usage
 if __name__ == "__main__":
-    pdf_path = './Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper - 副本.pdf'
+    pdf_path = './2402_02941.pdf'
     pdf_parser = PDFFigureExtractor(pdf_path)
     x = pdf_parser.extract_figures_and_tables()
     print("img_dict:",x)

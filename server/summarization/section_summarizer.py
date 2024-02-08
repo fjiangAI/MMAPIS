@@ -8,7 +8,7 @@ import logging
 from multiprocessing.pool import ThreadPool as Pool
 import time
 import re
-from MMAPIS.config.config import CONFIG,LOGGER_MODES,SECTION_PROMPTS
+from MMAPIS.config.config import OPENAI_CONFIG,GENERAL_CONFIG,LOGGER_MODES,SECTION_PROMPTS
 from MMAPIS.tools.utils import init_logging,strip_title
 
 
@@ -66,7 +66,6 @@ class Section_Summarizer(GPT_Helper):
         else:
             logging.info("No openai api rate limit, use multi processing")
             flag, multi_resp = self.multi_chat_processing(summary_prompts, response_only=True, resest_messages=True, ignore_idx=ignore_idx)
-        print("flag:",flag)
 
         multi_resp = self.filter_final_response(multi_resp, raw_marker="Raw Summary Content",
                                                 final_marker="Final Summary Content")
@@ -75,9 +74,8 @@ class Section_Summarizer(GPT_Helper):
         text_summary = ''
         for i,(subtitle, resp) in enumerate(zip(subtitles, multi_resp)):
             text_summary += '#' * sections[i].rank + ' ' + strip_title(subtitle) + '\n' + resp + '\n'
-            article.sections[i].summary = resp
-        article.section_summary = article.extra_info + '\n' + text_summary
-        return article
+        res = article.extra_info + '\n' + text_summary
+        return res
 
 
 
@@ -117,7 +115,7 @@ class Section_Summarizer(GPT_Helper):
                 ignore_idx = [False] * len(article_texts)
 
             article_texts = tqdm(article_texts,position=0,leave=True)
-            article_texts.set_description(f"total {len(article_texts)} section | num_processes:{self.num_processes} | requests_per_minute:{self.rpm_limit}")
+            article_texts.set_description(f"[Section Summary] Total {len(article_texts)} section | num_processes:{self.num_processes} | requests_per_minute:{self.rpm_limit}")
             results = [
                 pool.apply_async(chat_func,kwds={'system_messages':system_messages[i] if flag else system_messages,
                                                  'text':article_text,
@@ -197,16 +195,16 @@ class Section_Summarizer(GPT_Helper):
 
 if __name__ == "__main__":
     logger = init_logging(logger_mode=LOGGER_MODES)
-    section_summarizer = Section_Summarizer(api_key=CONFIG["openai"]["api_key"],
-                                            base_url=CONFIG["openai"]["base_url"],
-                                            model_config=CONFIG["openai"]["model_config"],
-                                            proxy=CONFIG["arxiv"]["proxy"],
-                                            prompt_ratio=CONFIG["openai"]["prompt_ratio"],
-                                            rpm_limit=CONFIG["openai"]["rpm_limit"],
-                                            num_processes=CONFIG["openai"]["num_processes"],
-                                            ignore_titles=CONFIG["openai"]["ignore_title"],
+    section_summarizer = Section_Summarizer(api_key=OPENAI_CONFIG["api_key"],
+                                            base_url=OPENAI_CONFIG["base_url"],
+                                            model_config=OPENAI_CONFIG["model_config"],
+                                            proxy=GENERAL_CONFIG["proxy"],
+                                            prompt_ratio=OPENAI_CONFIG["prompt_ratio"],
+                                            rpm_limit=OPENAI_CONFIG["rpm_limit"],
+                                            num_processes=OPENAI_CONFIG["num_processes"],
+                                            ignore_titles=OPENAI_CONFIG["ignore_title"],
                                             )
-    article_path = "Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper.mmd"
+    article_path = "222.md"
     with open(article_path,"r",encoding="utf-8") as f:
         article_text = f.read()
 
@@ -215,15 +213,8 @@ if __name__ == "__main__":
                                                    summary_prompts=SECTION_PROMPTS,
                                                    init_grid=2,
                                                    max_grid=4)
-    print("extra_info:",article.extra_info)
-    print("-"*100)
-    print()
-    for section in article.sections:
-        print(section.title)
-        print(section.summary)
-        print("-"*100)
 
 
     with open("summary.md","w",encoding="utf-8") as f:
-        f.write(article.section_summaries)
+        f.write(article)
 

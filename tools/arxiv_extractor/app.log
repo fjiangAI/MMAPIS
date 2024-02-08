@@ -1,8 +1,0 @@
-2024-01-28 08:47:13 - INFO - root - arxiv_helper - get_keyword_data - arxiv_helper.py:54 - fetching https://arxiv.org/search/?query=quantum+physics&searchtype=all&abstracts=show&order=-announced_date_first&size=50
-kew_word:quantum+physics
-2024-01-28 08:47:15 - INFO - root - arxiv_helper - remove_na_duplicates - arxiv_helper.py:232 - exist 0 NA or duplicate links
-2024-01-28 08:47:15 - INFO - root - arxiv_helper - parse_keyword_data - arxiv_helper.py:95 - found links(20) > max_return(10) with keywork quantum+physics,return 10 links
-2024-01-28 08:47:15 - INFO - root - arxiv_helper - get_daily_data - arxiv_helper.py:108 - fetching https://arxiv.org/list/cs/new
-2024-01-28 08:47:19 - INFO - root - arxiv_helper - remove_na_duplicates - arxiv_helper.py:232 - exist 0 NA or duplicate links
-2024-01-28 08:47:19 - INFO - root - arxiv_helper - parse_daily_data - arxiv_helper.py:166 - Found 20 new papers > max_return:10 today, return 10 links
-2024-01-28 08:47:21 - INFO - root - arxiv_helper - download_pdf - arxiv_helper.py:217 - Downloaded https://arxiv.org/pdf/2401.13700 to 2401.13700.pdf

@@ -1,16 +1,16 @@
-from .base_tts import TTSConverter
+from MMAPIS.tools.tts.base_tts import TTSConverter
 import requests
 import hashlib
 import time
 from playsound import playsound
 import os
 import uuid
-from MMAPIS.config.config import CONFIG
+from MMAPIS.config.config import TTS_CONFIG
 from typing import Union
 from pathlib import Path
 
 class YouDaoTTSConverter(TTSConverter):
-    def __init__(self,base_url,api_key,app_secret):
+    def __init__(self,base_url,api_key,app_secret,proxy:dict = None):
         """
         Initialize the YouDaoTTS
         :param base_url:
@@ -19,6 +19,7 @@ class YouDaoTTSConverter(TTSConverter):
         """
         super().__init__(base_url,api_key)
         self.app_secret = app_secret
+        self.proxy = proxy
 
     @staticmethod
     def encrypt(signStr):
@@ -30,7 +31,7 @@ class YouDaoTTSConverter(TTSConverter):
     def request_api(self,data):
         """send POST request to YouDao TTS API and return response"""
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        return requests.post(self.base_url, data=data, headers=headers)
+        return requests.post(self.base_url, data=data, headers=headers,proxies=self.proxy)
 
     def convert_text_to_speech(
                        self,
@@ -113,9 +114,9 @@ class YouDaoTTSConverter(TTSConverter):
 
 
 if __name__ == "__main__":
-    youdao_tts = YouDaoTTSConverter(base_url = CONFIG['tts']['base_url'],
-                                    api_key= CONFIG['tts']['api_key'],
-                                    app_secret= CONFIG['tts']['app_secret'])
+    youdao_tts = YouDaoTTSConverter(base_url = TTS_CONFIG['base_url'],
+                                    api_key=TTS_CONFIG['api_key'],
+                                    app_secret= TTS_CONFIG['app_secret'])
 
     text = """
 This works because ThreadPool shares memory with the main thread, rather than creating a new process- this means that pickling is not required.

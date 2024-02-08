@@ -1,22 +1,28 @@
-arxiv:
+general:
   proxy:
-    http: 'http://127.0.0.1:7890'
-    https: 'http://127.0.0.1:7890'
-    ftp: 'ftp://127.0.0.1:7890'
-    host: 'http://localhost:7890'
+    http: 'http://127.0.0.1:your_port' # TODO: set your proxy
+    https: 'http://127.0.0.1:your_port' # TODO: set your proxy
+    ftp: 'ftp://127.0.0.1:your_port' # TODO: set your proxy
+    host: 'http://localhost:your_port' # TODO: set your proxy
   headers:
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0"
-  key_word: "https://arxiv.org/search/?searchtype=all&query=Computer+Vision+and+Pattern+Recognition&abstracts=show&size=200&order=submitted_date&start=9800" # if daily, set null
+    "User-Agent": "xxx" # TODO: set your user-agent
+  save_dir: "./res"
+
+arxiv:
+  key_word: null # keyword can be str or list of str, and can be url itself. If search daily submission, set null
+  daily_type: "cs"
+  download: false
+  max_return: 2
 
 openai:
-  api_key: "sk-nRjm3MuSfJ9yoDZu987f9f8c0b014052B463046c0587B01c"
+  api_key: "sk-xxx" # TODO: set your api key
   prompts_path:
     './prompts_config.json'
-  ignore_title: ["references","appendix","acknowledg"]
-  base_url: "https://api.ai-gaochao.cn/v1"
-  rpm_limit: 0
-  num_processes: 6
-  prompt_ratio: 0.8
+  ignore_title: ["reference","appendix","acknowledg"]
+  base_url: "https:/xxxx" # TODO: set your base url
+  rpm_limit: 3 # int,  0 means no limit, >0 means the max request per miniute
+  num_processes: 6 
+  prompt_ratio: 0.8 # prompt_len / max_tokns, 0.8 means up to 80% of max tokens can be prompt
   model_config:
     model: "gpt-3.5-turbo-16k-0613"
     temperature: 0.5
@@ -26,11 +32,21 @@ openai:
     presence_penalty: 0.2
 
 nougat:
-  check_point : "./pretrained_w"
-  out: "./res/cs_2017"
-  pdf : ["./data/222.pdf","./data/111.pdf"] # pdf file path,list
+  check_point : "./tools/nougat/pretrained_w"
+  pdf : ["./data"]    # list of pdf path or pdf dir
+  recompute : true 
+  markdown : true
 
 tts:
-  base_url: "https://openapi.youdao.com/ttsapi"
-  api_key: '21a52d8cbabd6256'
-  app_secret: 'MYttHedJuswCG6CNoyhd5YWH5egzQPSa'
+  base_url: "xxx" # TODO: set your tts base url
+  api_key: 'xxx' # TODO: set your tts api key
+  app_secret: "xxx" # TODO: set your app secret
+
+alignment:
+  init_grid: 3  # The grid level for aligning pictures with subtitles. For example, setting it to 3 means the picture can be aligned with a 3-level subtitle (e.g., ### subtitle). Setting init_grid to 2 means it can be aligned with a 2-level subtitle (e.g., ## subtitle).
+  max_grid: 4  # The maximum grid level for section splitting. For instance, setting it to 4 means the article structure can be split into 4-level subtitles (e.g., #### subtitle).
+  threshold: 0.9
+  img_width: 600
+
+
+

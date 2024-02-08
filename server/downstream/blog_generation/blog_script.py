@@ -4,7 +4,7 @@ import reprlib
 from MMAPIS.config.config import CONFIG, APPLICATION_PROMPTS
 from MMAPIS.tools.tts import YouDaoTTSConverter
 
-class Blog_Generator(GPT_Helper):
+class Blog_Script_Generator(GPT_Helper):
     def __init__(self,
                  api_key,
                  base_url,
@@ -17,10 +17,10 @@ class Blog_Generator(GPT_Helper):
                          proxy=proxy,
                          **kwargs)
 
-    def blog_generation(self,
+    def blog_script_generation(self,
                      document_level_summary: str,
                      section_summaries: Union[str, List[str]],
-                     blog_prompts: dict = None,
+                     blog_prompts: dict = APPLICATION_PROMPTS["blog_prompts"],
                      reset_messages: bool = True,
                      response_only: bool = True,
                      raw_marker: str = "Raw Blog Content",
@@ -36,7 +36,6 @@ class Blog_Generator(GPT_Helper):
                                    reset_messages=reset_messages,
                                    response_only=response_only,
                                    **kwargs)
-        print("raw content:",content)
         return flag,self.filter_final_response(content,raw_marker= raw_marker,final_marker=final_marker)
 
 
@@ -61,10 +60,10 @@ if __name__ == "__main__":
     section_summaries_path = "../summary.md"
     with open(section_summaries_path, 'r') as f:
         section_summaries = f.read()
-    blog_generator = Blog_Generator(api_key=api_key,
+    blog_generator = Blog_Script_Generator(api_key=api_key,
                                     base_url=base_url,
                                     model_config=model_config)
-    flag,response = blog_generator.blog_generation(
+    flag,response = blog_generator.blog_script_generation(
                                     document_level_summary=user_input,
                                     section_summaries=section_summaries,
                                     blog_prompts=blog_prompts,

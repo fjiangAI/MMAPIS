@@ -34,11 +34,9 @@ class Paper_Recommender(GPT_Helper):
                 article = Article(article)
                 article_segment = [article.sections[0].title_text, article.sections[-1].title_text]
             article_segment = "\n".join(article_segment)
-        print("article_segment:",article_segment)
         score_system = [score_prompts.get('score_system', ''), score_prompts.get('score', '')]
         score_prompt = score_prompts.get('score_input', '').replace('{article}', document_level_summary, 1).replace(
             '{paper excerpt}', article_segment, 1)
-        print("score_prompt:",score_prompt)
 
         self.init_messages("system",score_system)
         return self.summarize_text(score_prompt, reset_messages=reset_messages, response_only=response_only, **kwargs)

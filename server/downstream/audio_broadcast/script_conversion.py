@@ -34,9 +34,9 @@ class Broadcast_Generator(GPT_Helper):
         self.init_messages("system", system_messages)
         user_input = broadcast_prompts.get("app_input", '').replace('{article}', section_summaries, 1).replace('{generated summary}', document_level_summary, 1)
         flag,content =  self.summarize_text(text=user_input,
-                                   reset_messages=reset_messages,
-                                   response_only=response_only,
-                                   **kwargs)
+                                           reset_messages=reset_messages,
+                                           response_only=response_only,
+                                           **kwargs)
         content = self.filter_final_response(content,raw_marker = raw_marker,final_marker = final_marker)
         return flag,content
 
@@ -67,10 +67,10 @@ if __name__ == "__main__":
     broadcast_prompts = APPLICATION_PROMPTS["broadcast_prompts"]
     broadcast_generator = Broadcast_Generator(api_key=api_key, base_url=base_url, model_config=model_config)
     flag,content = broadcast_generator.broadcast_generation(document_level_summary=user_input,
-                                          section_summaries=section_summaries,
-                                          broadcast_prompts=broadcast_prompts,
-                                          reset_messages=True,
-                                          response_only=True,
-                                            )
+                                                          section_summaries=section_summaries,
+                                                          broadcast_prompts=broadcast_prompts,
+                                                          reset_messages=True,
+                                                          response_only=True,
+                                                            )
     print("flag: ", flag)
     print("content: ", content)

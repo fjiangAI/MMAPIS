@@ -1,4 +1,3 @@
-from script_conversion import Broadcast_Generator
+from .tts_integration import BroadcastTTSGenerator
 
-
-__all__ = ["Broadcast_Generator"]
+__all__ = ["BroadcastTTSGenerator"]

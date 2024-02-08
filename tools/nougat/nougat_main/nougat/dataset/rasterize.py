@@ -14,7 +14,7 @@ import io
 from PIL import Image
 from typing import Optional, List
 import requests
-from submodule.my_utils import get_pdf_doc
+from MMAPIS.tools.utils import get_pdf_doc
 def rasterize_paper(
     pdf: [Path,str,bytes],
     outpath: Optional[Path] = None,

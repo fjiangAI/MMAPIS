@@ -2,18 +2,20 @@ import requests
 from tenacity import retry, stop_after_attempt, wait_fixed
 import reprlib
 
-class Article:
-    def __init__(self, title, abstract, authors, pdf_url):
+class ArxivArticle:
+    def __init__(self, title, abstract, authors, pdf_url,pdf_path=None):
         self._title = title
         self._abstract = abstract
         self._authors = authors
         self._pdf_url = pdf_url
+        self.pdf_path = pdf_path
+
 
     def __str__(self):
-        return f"Article: {self._title},url:{self._pdf_url}"
+        return f"ArxivArticle: {self._title}, url:{self._pdf_url}, pdf_path:{self.pdf_path}"
 
     def __repr__(self):
-        return f"Aritcle(title={reprlib.repr(self._title)}, abstract={reprlib.repr(self._abstract)}, authors={reprlib.repr(self._authors)}, pdf_url={reprlib.repr(self._pdf_url)})"
+        return f"ArxivArticle(title={reprlib.repr(self._title)}, abstract={reprlib.repr(self._abstract)}, authors={reprlib.repr(self._authors)}, pdf_url={reprlib.repr(self._pdf_url)})"
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -41,13 +43,15 @@ class Article:
 
 
 class CrawlerBase:
-    def __init__(self, proxy=None, headers=None, max_retry=3, timeout=1000):
+    def __init__(self, proxy=None, headers=None, max_retry=3, timeout=1000,download:bool = False, save_dir: str = None, **kwargs):
         self.proxy = proxy
         self.headers = headers
         self.max_retry = max_retry
         self.timeout = timeout
         self.get_response = retry(stop=stop_after_attempt(self.max_retry), wait=wait_fixed(self.timeout))(
             self._get_response)
+        self.download = download
+        self.save_dir = save_dir
 
     def _get_response(self, url: str):
         response = requests.get(url, proxies=self.proxy, headers=self.headers)

@@ -1,5 +1,0 @@
-2024-01-28 08:25:09 - INFO - root - section_class - get_title_contributors - section_class.py:288 - article :test,parse author and affiliation with latex format successfully
-2024-01-28 08:25:09 - INFO - root - section_split - sectional_split - section_split.py:32 - finish split in split grid:3(i.e. ###), with 11 sections,including 1 tables and 5 figures, max section length:10229
-2024-01-28 08:25:09 - INFO - root - section_summarizer - section_summarize - section_summarizer.py:67 - No openai api rate limit, use multi processing
-2024-01-28 08:25:28 - INFO - root - PDFFigure_Extractor - extract_save_figures - PDFFigure_Extractor.py:137 - parser success: 7 img found in ./chen/Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper.pdf
-2024-01-28 08:25:41 - ERROR - root - section_class - get_title_contributors - section_class.py:296 - article :article_level_summary,contributors is None, parser error
