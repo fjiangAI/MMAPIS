@@ -248,7 +248,7 @@ class Article():
         matches = re.finditer(table_pattern, self.article)
         tables = []
         for match in matches:
-            self.article = self.article.replace(match.group(0), '\n\n')
+            self.article = self.article.replace(match.group(0), '')
             tables.append(Table(match.group(1), match.group(2)))
         return Tables(tables)
 
@@ -262,7 +262,7 @@ class Article():
         matches = re.finditer(figure_pattern, self.article)
         figure_captions = []
         for match in matches:
-            self.article = self.article.replace(match.group(1), '\n\n')
+            self.article = self.article.replace(match.group(1), '')
             figure_captions.append(subtext(match.group(1)))
         return figure_captions
 
@@ -401,7 +401,8 @@ class Article():
         :param maxgrid: int, the max grid of sections
         :return: list of subgroup
         """
-        sub_title_pattern = re.compile(r'\n+(#{{1,{}}}\s+.*?)\n+(.*?)(?=\n\n#{{1,{}}}\s+|$)'.format(maxgrid, maxgrid), re.DOTALL)
+        #         sub_title_pattern = re.compile(r'\n+(#{{1,{}}}\s+.*?)\n+(.*?)(?=\n\n#{{1,{}}}\s+|$)'.format(maxgrid, maxgrid), re.DOTALL)
+        sub_title_pattern = re.compile(r'\n+(#{{1,{}}}\s+.*?)\n+(.*?)(?=\n+#{{1,{}}}\s+|$)'.format(maxgrid, maxgrid), re.DOTALL)
         sub_setions = re.findall(sub_title_pattern, self.article)
         if sub_setions:
             # i[0]:title,i[1]:text
@@ -516,9 +517,9 @@ class Article():
 
     @property
     def extra_info(self):
-        titles = '' if self.judge_na(self._titles) else self._titles + "\n"
-        authors = '' if self.judge_na(self._authors) else "- Authors: " + self._authors + "\n"
-        affiliations = '' if self.judge_na(self._affiliations ) else "- Affiliations: " + self._affiliations + "\n"
+        titles = '' if self.judge_na(self._titles) else self._titles.replace('<br>','\n') + "\n"
+        authors = '' if self.judge_na(self._authors) else "- Authors: " + self._authors.replace('<br>','\n') + "\n"
+        affiliations = '' if self.judge_na(self._affiliations ) else "- Affiliations: " + self._affiliations.replace('<br>','\n') + "\n"
         self._extra_info = '\n'.join([titles, authors, affiliations])
         return self._extra_info
 

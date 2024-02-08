@@ -67,10 +67,8 @@ if '__main__' == __name__:
     print("read file")
     init_grid = 2
     ignore_titles = ['references']
-    article,subsection_titles = sectional_split(text,file_path,init_grid,ignore_titles)
+    article = sectional_split(text,file_path,init_grid,ignore_titles)
     print(article)
-    print(subsection_titles)
-    print('-'*100)
     print(article.grid)
     print("title:",article.titles)
     print("author:",article.authors)

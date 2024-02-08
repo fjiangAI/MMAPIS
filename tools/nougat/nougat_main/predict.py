@@ -40,7 +40,7 @@ def latex2md_math(text):
 
 
 def nougat_predict(args,proxy=None,headers=None,pdf_name:str = None):
-   #  args = get_args()
+    # args = get_args()
     model = NougatModel.from_pretrained(args.checkpoint,ignore_mismatched_sizes=True).to(torch.bfloat16)
     if torch.cuda.is_available():
         model.to("cuda")

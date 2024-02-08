@@ -3,6 +3,7 @@ import multiprocessing
 from functools import partial
 from tqdm import tqdm
 from multiprocessing.pool import ThreadPool as Pool
+from typing import List
 
 class TTSConverter:
     def __init__(self,base_url,api_key):
@@ -52,13 +53,13 @@ class TTSConverter:
             logging.warning(f"Can't split text into pieces with max_len={max_len}")
             return text_list
 
-    def multi_processing(self,text_list: list[str], num_processes: int = 4):
+    def multi_processing(self,text_list: List[str], num_processes: int = 4):
 
         num_processes = min(num_processes, len(text_list), multiprocessing.cpu_count())
         with Pool(processes=num_processes) as pool:
             text2speech_func = partial(self.convert_text_to_speech)
             text_list = tqdm(text_list, position=0, leave=True)
-            text_list.set_description(f"total {len(text_list)} section | num_processes:{num_processes}")
+            text_list.set_description(f"[TTS Converter] Total {len(text_list)} section | num_processes:{num_processes}")
             results = [
                 pool.apply_async(text2speech_func, args=(text,))
                 for text in text_list
