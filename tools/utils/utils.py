@@ -12,6 +12,8 @@ from datetime import datetime
 import json
 import tiktoken
 import re
+import os
+from io import BytesIO
 
 
 
@@ -267,6 +269,55 @@ def strip_title(title):
     title = re.sub(r'[^a-zA-Z]*$', '', title)
     return title
 
+
+
+
+def zip_dir_to_bytes(dir_path):
+    """
+    compress the directory to zip file
+    :param dir_path: the directory path
+    :return: the zip file bytes
+    """
+    bytes_io = BytesIO()
+    with zipfile.ZipFile(bytes_io, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(dir_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                zipf.write(file_path, os.path.relpath(file_path, dir_path))
+
+    # reset the file pointer to the beginning
+    bytes_io.seek(0)
+    return bytes_io.getvalue()
+
+
+
+def extract_zip_from_bytes(zip_data, extract_dir):
+    """
+    Extracts contents from byte data of a ZIP file into a specified directory.
+
+    Parameters:
+    - zip_data: The byte data of the ZIP file.
+    - extract_dir: The path to the target directory for extraction.
+    """
+    # Convert the byte data into a BytesIO object for reading by the zipfile module
+    zip_bytes_io = BytesIO(zip_data)
+    # Use zipfile to read the BytesIO object
+    with zipfile.ZipFile(zip_bytes_io, 'r') as zip_ref:
+        # Extract to the specified directory
+        zip_ref.extractall(extract_dir)
+
+def get_pdf_name(pdf):
+    if isinstance(pdf, Path):
+        return pdf.name
+    elif isinstance(pdf, bytes):
+        name = f"unk_pdf_" + datetime.now().strftime("%Y%m%d_%H%M%S")
+        return name
+    elif isinstance(pdf, str):
+        if pdf.startswith("http"):
+            name = pdf.split("/")[-1].replace('.', '_')
+            return name
+        else:
+            return Path(pdf).name
 
 if __name__ == "__main__":
     text = """

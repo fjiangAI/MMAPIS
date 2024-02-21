@@ -8,6 +8,7 @@ import spacy
 from pathlib import Path
 import time
 from fastapi import UploadFile
+import tempfile
 
 def section_level_alignment(
     article:Article,
@@ -127,7 +128,8 @@ def img_txt_alignment(
         init_grid:int = 3,
         max_grid:int = 4,
         img_width:int = 600,
-        threshold:float = 0.9
+        threshold:float = 0.9,
+        temp_file:bool = False,
 ):
     if isinstance(pdf,str):
         pdf = Path(pdf)
@@ -141,6 +143,8 @@ def img_txt_alignment(
         pdf = Path(pdf_path)
     if not save_dir:
         save_dir = pdf.parent
+    if temp_file:
+        save_dir = tempfile.mkdtemp(dir=save_dir)
     res_article = Article(article = text,file_name = pdf.stem,grid=init_grid,max_grid=max_grid)
     pdf_extractor = PDFFigureExtractor(pdf_path = pdf)
     img_paths = pdf_extractor.extract_save_figures(save_dir=save_dir)
@@ -266,22 +270,22 @@ def img_ls_to_md(img_ls:Union[List[str],str],
 
 
 
-if __name__ == "__main__":
-    file_path = "./chen/Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper.md"
-    pdf_path = "./chen/Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper.pdf"
-    document = "./chen/Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper_blog.md"
-    save_dir = './24_27'
-    with open(file_path, 'r', encoding='utf-8') as f:
-        text = f.read()
-    with open(document, 'r', encoding='utf-8') as f:
-        document = f.read()
-    file_path = img_txt_alignment(
-        text = document,
-        pdf = pdf_path,
-        save_dir = save_dir,
-        init_grid=3,
-        raw_md_text=text,
-    )
+# if __name__ == "__main__":
+#     file_path = "./chen/Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper.md"
+#     pdf_path = "./chen/Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper.pdf"
+#     document = "./chen/Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper_blog.md"
+#     save_dir = './24_27'
+#     with open(file_path, 'r', encoding='utf-8') as f:
+#         text = f.read()
+#     with open(document, 'r', encoding='utf-8') as f:
+#         document = f.read()
+#     file_path = img_txt_alignment(
+#         text = document,
+#         pdf = pdf_path,
+#         save_dir = save_dir,
+#         init_grid=3,
+#         raw_md_text=text,
+#     )
 
 
 

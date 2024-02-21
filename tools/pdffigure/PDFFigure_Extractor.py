@@ -146,7 +146,7 @@ class PDFFigureExtractor:
 
 # Example usage
 if __name__ == "__main__":
-    pdf_path = './2402_02941.pdf'
+    pdf_path = './111.pdf'
     pdf_parser = PDFFigureExtractor(pdf_path)
     x = pdf_parser.extract_figures_and_tables()
     print("img_dict:",x)

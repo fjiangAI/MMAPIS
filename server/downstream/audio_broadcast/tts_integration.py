@@ -4,6 +4,7 @@ from typing import List, Union
 from MMAPIS.config.config import TTS_CONFIG,OPENAI_CONFIG, APPLICATION_PROMPTS
 import reprlib
 import os
+import logging
 class BroadcastTTSGenerator():
     def __init__(self,
                  llm_api_key,
@@ -27,6 +28,32 @@ class BroadcastTTSGenerator():
                                                 proxy=proxy,
                                                 )
 
+
+    def broadcast_script_generation(self,
+                                    document_level_summary:str,
+                                    section_summaries:Union[str, List[str]],
+                                    broadcast_prompts:dict = None,
+                                    reset_messages:bool = True,
+                                    response_only:bool = True,
+                                    raw_marker:str = "Raw Broadcast Content",
+                                    final_marker:str = "New Broadcast Content",
+                                    ):
+        flag,content = self.broadcast_generator.broadcast_generation(document_level_summary=document_level_summary,
+                                                                    section_summaries=section_summaries,
+                                                                    broadcast_prompts=broadcast_prompts,
+                                                                    reset_messages=reset_messages,
+                                                                    response_only=response_only,
+                                                                    raw_marker=raw_marker,
+                                                                    final_marker=final_marker)
+        return flag,content
+
+    def text2speech(self, text:str, return_bytes:bool = False):
+        if not all([self.tts_converter.base_url,self.tts_converter.api_key,self.tts_converter.app_secret]):
+            logging.warning("Due to missing TTS credentials, the text to speech conversion will not be performed.")
+            return True,None
+        flag, bytes_content = self.tts_converter.convert_texts_to_speech(text,return_bytes=return_bytes)
+        return flag, bytes_content
+
     def broadcast_tts_generation(self,
                                  document_level_summary:str,
                                  section_summaries:Union[str, List[str]],
@@ -37,29 +64,38 @@ class BroadcastTTSGenerator():
                                  final_marker:str = "New Broadcast Content",
                                  return_bytes:bool = False,
                                  **kwargs):
-        flag,content = self.broadcast_generator.broadcast_generation(document_level_summary=document_level_summary,
-                                                                    section_summaries=section_summaries,
-                                                                    broadcast_prompts=broadcast_prompts,
-                                                                    reset_messages=reset_messages,
-                                                                    response_only=response_only,
-                                                                    raw_marker=raw_marker,
-                                                                    final_marker=final_marker,
-                                                                    **kwargs)
-        if all([self.tts_converter.base_url,self.tts_converter.api_key,self.tts_converter.app_secret]):
-            flag, bytes_content = self.tts_converter.convert_texts_to_speech(content,return_bytes=return_bytes)
-        else:
-            bytes_content = None
-            flag = True
+        # flag,content = self.broadcast_generator.broadcast_generation(document_level_summary=document_level_summary,
+        #                                                             section_summaries=section_summaries,
+        #                                                             broadcast_prompts=broadcast_prompts,
+        #                                                             reset_messages=reset_messages,
+        #                                                             response_only=response_only,
+        #                                                             raw_marker=raw_marker,
+        #                                                             final_marker=final_marker,
+        #                                                             **kwargs)
+        # if all([self.tts_converter.base_url,self.tts_converter.api_key,self.tts_converter.app_secret]):
+        #     flag, bytes_content = self.tts_converter.convert_texts_to_speech(content,return_bytes=return_bytes)
+        # else:
+        #     bytes_content = None
+        #     flag = True
+        # return flag,content, bytes_content
+        script_flag,content = self.broadcast_script_generation(document_level_summary=document_level_summary,
+                                                        section_summaries=section_summaries,
+                                                        broadcast_prompts=broadcast_prompts,
+                                                        reset_messages=reset_messages,
+                                                        response_only=response_only,
+                                                        raw_marker=raw_marker,
+                                                        final_marker=final_marker)
+        tts_flag, bytes_content = self.text2speech(content,return_bytes=return_bytes)
+        flag = script_flag and tts_flag
         return flag,content, bytes_content
+
 
     def play_sound(self, bytes_content:bytes):
         self.tts_converter.playsound(bytes_content)
 
 
 if __name__ == "__main__":
-    user_input_path = "../integrate.md"
-    with open(user_input_path, 'r') as f:
-        user_input = f.read()
+
     tts_base_url = TTS_CONFIG['base_url']
     tts_api_key = TTS_CONFIG['api_key']
     app_secret = TTS_CONFIG['app_secret']
@@ -87,8 +123,8 @@ if __name__ == "__main__":
                                                                            broadcast_prompts=broadcast_prompts,
                                                                            return_bytes=True,
                                                                             )
-    broadcast_tts_generator.play_sound(bytes_content)
     print(broadcast_script)
-    broadcast_tts_generator.play_sound(bytes_content)
+    print("type of bytes_content:",type(bytes_content))
+    print("length of bytes_content:",len(bytes_content))
 
 

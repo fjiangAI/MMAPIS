@@ -50,7 +50,6 @@ class TTSConverter:
                     else:
                         logging.info(f"split text with{repr(pattern)},max_len={cur_max_len}")
                         return text_list
-            logging.warning(f"Can't split text into pieces with max_len={max_len}")
             return text_list
 
     def multi_processing(self,text_list: List[str], num_processes: int = 4):

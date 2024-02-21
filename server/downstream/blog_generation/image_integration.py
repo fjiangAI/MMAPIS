@@ -35,6 +35,7 @@ class Blog_Generator():
                         init_grid: int = ALIGNMENT_CONFIG['init_grid'],
                         max_grid: int = ALIGNMENT_CONFIG['max_grid'],
                         img_width: int = ALIGNMENT_CONFIG['img_width'],
+                        temp_file: bool = False,
                         **kwargs):
         flag, content = self.blog_script_generator.blog_script_generation(document_level_summary=document_level_summary,
                                                                             section_summaries=section_summaries,
@@ -44,16 +45,17 @@ class Blog_Generator():
                                                                             raw_marker=raw_marker,
                                                                             final_marker=final_marker,
                                                                             **kwargs)
-        content = img_txt_alignment(text=content,
-                                    pdf=pdf,
-                                    raw_md_text=raw_md_text,
-                                    file_name=file_name,
-                                    save_dir=save_dir,
-                                    threshold=threshold,
-                                    init_grid=init_grid,
-                                    max_grid=max_grid,
-                                    img_width=img_width)
-        return flag, content
+        path = img_txt_alignment(text=content,
+                                pdf=pdf,
+                                raw_md_text=raw_md_text,
+                                file_name=file_name,
+                                save_dir=save_dir,
+                                threshold=threshold,
+                                init_grid=init_grid,
+                                max_grid=max_grid,
+                                img_width=img_width,
+                                 temp_file= temp_file)
+        return flag, path
 
 if __name__ == "__main__":
     api_key = OPENAI_CONFIG['api_key']

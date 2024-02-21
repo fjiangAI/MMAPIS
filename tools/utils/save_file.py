@@ -36,7 +36,8 @@ def save_mmd_file(save_texts: Union[str,List[str]],
 @retry(stop_max_attempt_number=3, wait_fixed=1000)
 def download_pdf(pdf_url: Union[str,Path],
                  save_dir: Union[str,Path],
-                 pdf_name: Union[str, Path] = None
+                 pdf_name: Union[str, Path] = None,
+                 temp_file: bool = False,
                  ):
     """
     download pdf from url
@@ -52,9 +53,15 @@ def download_pdf(pdf_url: Union[str,Path],
         if pdf_name is None:
             pdf_name = pdf_url.split("/")[-1].replace('.', '_')
             save_dir = Path(save_dir) / Path(pdf_name).stem
-        pdf_path = Path(save_dir) / pdf_name + ".pdf"
+        if temp_file:
+            temp_t = datetime.now().strftime("%Y%m%d_%H%M")
+            pdf_name = f"{temp_t}_{pdf_name}"
+        pdf_path = Path(save_dir) / (str(pdf_name) + ".pdf")
+        if not pdf_path.parent.exists():
+            pdf_path.parent.mkdir(parents=True, exist_ok=True)
         with open(pdf_path, 'wb') as pdf_file:
             pdf_file.write(response.content)
+        logging.info(f"download pdf from {pdf_url} to {pdf_path}")
         return True, pdf_path
     except Exception as e:
         print(f"Error downloading PDF: {e}")

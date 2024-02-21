@@ -2,17 +2,19 @@
 
 # ✨ Latest News
 
-- [02/05/2024] : Released the preprocessing code.
+- [02/20/2024] : Incorporate updates to Open APIs complete with relevant calling methods in [api_usage.ipynb](client/api_usage.ipynb) 
+
+- [02/05/2024] : Release the code of preprocessing
 
 *   [01/16/2024]: Release the [tech report](https://arxiv.org/abs/2401.09150).
 
 # TODO List
 
-- [x] Open-source the base code for each component. 
+- [x] Open the base code of each part
 
-- [ ] Open the API for each part in the entire workflow to provide convenience for users. 
-- [ ] Optimize the User Interface (UI) to enhance the user's interactive experience. 
-- [ ] Enhance the code execution speed.
+- [x] Open the API of each part in the whole workflow to convenient user 
+- [ ] Optimize the User Intereface(UI) to better improve user's interactive experience
+- [ ] Speed up code
 
 
 
@@ -101,7 +103,7 @@ MMAPIS/
 │   │
 │   ├── summarization/        # Two-stage summarization process
 │   │   ├── section_summarizer.py # Script for section-level summary
-│   │   └── summary_integrator.py # Script for integrating section summaries,i.e.    │   │						 produce document-level summary
+│   │   └── summary_integrator.py # Script for integrating section summaries,i.e.                                                                               │   │						 produce document-level summary
 │   │
 │   └── downstream/           # Downstream functionalities
 │       ├── paper_recommendation/ # Paper recommendation module
@@ -148,7 +150,7 @@ MMAPIS/
 
 4. For Nougat, you need to download the  [Released pretrained weight](https://github.com/facebookresearch/nougat/releases) to the checkpoint path.
 
-5. Make sure to setup your parameters in [config.yaml](config\config.yaml)
+5. Make sure to setup your parameters in [config.yaml](config/config.yaml)
 
 6. You can run the whole process by executing [main.py](main.py). The features are: 
 
@@ -174,7 +176,7 @@ MMAPIS/
    ├── res/                       # Output file dir
    │   ├── xxx/                	 # File name as dirname
    │   │   ├── img/		      # Save dir of markdown image 
-   │   │   ├── xxx.md             # Raw output markdown file of xxx.pdf with 	   │   │						 plian text
+   │   │   ├── xxx.md             # Raw output markdown file of xxx.pdf with 	                                                                                   │   │						 plian text
    │   │   ├── xxx_raw_aligned.md # Aligned raw markdown file
    │   │   ├── broadcast.mp3      # the mp3 output of broadcast style generation 
    │   │   ├── broadcast.md       # the text of broadcast style generation 

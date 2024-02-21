@@ -7,17 +7,12 @@ import fitz
 import os
 import tempfile
 import numpy as np
+import shutil
 from os import path as op
 import subprocess
 import json
 # FIXME: this is not robust
 from MMAPIS.tools.pdffigure.config import  *
-
-if  not os.path.exists(CUSTOM_DIR):
-    os.makedirs(CUSTOM_DIR)
-
-
-TEMP_DIR = tempfile.mkdtemp(dir=CUSTOM_DIR)
 
 DIR_PATH = op.dirname(op.abspath(__file__))
 PDF_FIGURES_JAR_PATH = op.join(
@@ -125,17 +120,27 @@ def get_objpixmap(pdf, obj, zoom=4, savepath=None, get_tmpfile_dir=True):
     :param savepath: save path of the object
     :return: pixmap of the object
     """
+    if not os.path.exists(CUSTOM_DIR):
+        os.makedirs(CUSTOM_DIR)
+    TEMP_DIR = tempfile.mkdtemp(dir=CUSTOM_DIR)
     page = pdf[obj[1]]
     box = obj[2]
     pixmap = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), clip=box)
     if savepath and os.path.isdir(savepath):
         pixmap.save(savepath)
-    if get_tmpfile_dir:
-        tmp_path = os.path.join(TEMP_DIR, generate_id()+'.png')
-        pixmap.save(tmp_path)
-        return tmp_path
-    else:
-        return pixmap
+    try:
+        if get_tmpfile_dir:
+            tmp_path = os.path.join(TEMP_DIR, generate_id()+'.png')
+            pixmap.save(tmp_path)
+            return tmp_path
+        else:
+            return pixmap
+    except Exception as e:
+        logging.error(e)
+        return None
+    finally:
+        shutil.rmtree(CUSTOM_DIR, ignore_errors=True)
+        logging.info(f"Temp dir {CUSTOM_DIR} is removed")
 
 
 # Section Judge
@@ -690,6 +695,10 @@ def parsePDF_PDFFigures2(pdf_file: str):
     """
     Parse figures from the given scientific PDF using pdffigures2
     """
+    if not os.path.exists(CUSTOM_DIR):
+        os.makedirs(CUSTOM_DIR)
+
+    TEMP_DIR = tempfile.mkdtemp(dir=CUSTOM_DIR)
     args = [
         "java",
         "-jar",
@@ -702,10 +711,14 @@ def parsePDF_PDFFigures2(pdf_file: str):
         args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20
     )
     try :
-        return json.load(open(op.join(TEMP_DIR, op.basename(pdf_file).replace(".pdf", ".json")),"rb"))
+        data = json.load(open(op.join(TEMP_DIR, op.basename(pdf_file).replace(".pdf", ".json")),"rb"))
+        return data
     except Exception as e:
-        logging.error(f"error found:{e}")
+        logging.error(f"Failed to parse PDF using pdffigures2: {e}")
         return None
+    finally:
+        shutil.rmtree(CUSTOM_DIR, ignore_errors=True)
+        logging.info(f"Temp directory {CUSTOM_DIR} removed")
 
 
         
