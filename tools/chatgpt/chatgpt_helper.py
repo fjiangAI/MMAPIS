@@ -18,9 +18,10 @@ class GPT_Helper(LLMSummarizer):
                  base_url,
                  model_config:dict={},
                  proxy:dict = None,
+                 prompt_ratio:float = 0.8,
                  **kwargs):
 
-        super().__init__(api_key=api_key, base_url=base_url, model_config=model_config, proxy=proxy, **kwargs)
+        super().__init__(api_key=api_key, base_url=base_url, model_config=model_config, proxy=proxy,prompt_ratio=prompt_ratio, **kwargs)
 
 
     def __repr__(self):
@@ -91,10 +92,11 @@ class GPT_Helper(LLMSummarizer):
 
     def request_via_api(self,
                     user_input:str,
-                    system_messages:Union[str,List[str]] = "",
+                    system_messages:Union[str,List[str]] = None,
                     response_only:bool = True,
                     reset_messages:bool = True,
                     return_the_same:bool = False,
+                    session_messages:Union[str,List[str]] = None,
                     ):
         """
 
@@ -110,8 +112,21 @@ class GPT_Helper(LLMSummarizer):
             flag: boolean, use to
 
         """
-        if system_messages:
-            self.init_messages('system', system_messages)
+        messages = self.messages.copy()
+
+        if isinstance(system_messages, str):
+            system_messages = [system_messages]
+        # Default self.messages to session_messages or an empty list
+        if session_messages:
+            print("copy session_messages")
+            messages = session_messages[:]
+            if system_messages:
+                print("extend system_messages")
+                messages.extend([{'role': 'system', 'content': c} for c in system_messages])
+        else:
+            if system_messages:
+                print("init system_messages")
+                messages.extend([{'role': 'system', 'content': c} for c in system_messages])
 
         if return_the_same:
             content = user_input
@@ -124,12 +139,17 @@ class GPT_Helper(LLMSummarizer):
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.api_key}",
             }
+            messages.append({'role': 'user', 'content': user_input})
+            input_tokens = num_tokens_from_messages(messages, model=self.model)
+            token_threshold = self.max_tokens * self.prompt_ratio
 
-            self.messages.append({'role': 'user', 'content': user_input})
-            input_tokens = num_tokens_from_messages(self.messages, model=self.model)
+            if input_tokens > token_threshold:
+                logging.warning(f'input tokens {input_tokens} is larger than max tokens {token_threshold}, will cut the input')
+                diff = int(input_tokens - token_threshold)
+                messages[-1]['content'] = messages[-1]['content'][:-diff]
             parameters = {
                 "model": self.model,
-                "messages": self.messages,
+                "messages": messages,
                 "max_tokens": self.max_tokens-input_tokens,
                 "temperature": self.temperature,
                 "top_p": self.top_p,
@@ -140,27 +160,33 @@ class GPT_Helper(LLMSummarizer):
             response,content, flag = self.handle_request(url = url,parameters=parameters,headers=headers)
 
         if reset_messages:
-            self.messages.pop(-1)
+            messages.pop(-1)
             # self.init_messages('system', self.summary_prompts['system'])
         else:
             # add text of response to messages
             if flag:
-                self.messages.append({
+                messages.append({
                     'role': response['choices'][0]['message']['role'],
                     'content': response['choices'][0]['message']['content']
+                })
+            else:
+                messages.append({
+                    'role': 'assistant',
+                    'content': content
                 })
         if response_only:
             return flag, content
         else:
-            return flag, self.messages
+            return flag, messages
 
 
     def request_api(self,
                     user_input:str,
-                    system_messages:Union[str,List[str]] = "",
+                    system_messages:Union[str,List[str]] = None,
                     response_only:bool = True,
                     reset_messages:bool = True,
                     return_the_same:bool = False,
+                    session_messages:Union[str,List[str]] = None,
                     ):
         """
         :param user_input:
@@ -174,16 +200,18 @@ class GPT_Helper(LLMSummarizer):
                                     response_only= response_only,
                                     reset_messages= reset_messages,
                                     return_the_same= return_the_same,
+                                    session_messages= session_messages,
                                     )
 
 
 
     def summarize_text(self,
                        text:str,
-                       system_messages:Union[str,List[str]] = "",
+                       system_messages:Union[str,List[str]] = None,
                        response_only:bool = True,
                        reset_messages:bool = True,
                        return_the_same:bool = False,
+                       session_messages:Union[str,List[str]] = None,
                        ):
         """
         Use ChatGPT to summarize a given text.
@@ -195,11 +223,12 @@ class GPT_Helper(LLMSummarizer):
         # This might involve formatting the prompt in a specific way to ask for a summary
 
         flag, summarized_text = self.request_api(user_input=text,
-                                               system_messages=system_messages,
-                                               response_only=response_only,
-                                               reset_messages=reset_messages,
-                                                  return_the_same=return_the_same,
-                                                  )
+                                                 system_messages=system_messages,
+                                                 response_only=response_only,
+                                                 reset_messages=reset_messages,
+                                                 return_the_same=return_the_same,
+                                                 session_messages=session_messages,
+                                                )
         return flag, summarized_text
 
     def filter_final_response(self,resps:List[str],raw_marker:str,final_marker:str ):

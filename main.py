@@ -22,7 +22,7 @@ def main():
                     temp_ls.append(pdf)
             pdf_ls = temp_ls
     else:
-        arxiv_crawler = ArxivCrawler(proxy=GENERAL_CONFIG['proxy'],headers=GENERAL_CONFIG['headers'],download=True,save_dir=GENERAL_CONFIG['save_dir'])
+        arxiv_crawler = ArxivCrawler(proxy=GENERAL_CONFIG['proxy'],headers=GENERAL_CONFIG['headers'],download=False,save_dir=GENERAL_CONFIG['save_dir'])
         if ARXIV_CONFIG['key_word']:
             article_ls = arxiv_crawler.run_keyword_crawler(key_word=ARXIV_CONFIG["key_word"], max_return= ARXIV_CONFIG["max_return"],return_md=False)
         else:
@@ -69,7 +69,7 @@ def main():
             threshold=ALIGNMENT_CONFIG["threshold"],
             img_width=ALIGNMENT_CONFIG["img_width"],
         )
-        section_summaries = section_summarizer.section_summarize(
+        flag, section_summaries = section_summarizer.section_summarize(
             article_text=file.content,
             file_name=file_name,
             summary_prompts=SECTION_PROMPTS,
@@ -131,12 +131,23 @@ def main():
                                                                                  broadcast_prompts=APPLICATION_PROMPTS["broadcast_prompts"],
                                                                                  return_bytes=True,
                                                                                     )
+        recommendation_text = ""
+        for item in recommendation:
+            for i, v in enumerate(item.values()):
+                if i == 0:
+                    recommendation_text += f"- {v}\n"
+                else:
+                    recommendation_text += f"  - {v}\n"
         with open(os.path.join(GENERAL_CONFIG["save_dir"],file_name,"recommendation.md"), "w") as f:
-            f.write(recommendation)
+            f.write(recommendation_text)
         with open(os.path.join(GENERAL_CONFIG["save_dir"],file_name,"broadcast.md"), "w") as f:
             f.write(broadcast_script)
-        with open(os.path.join(GENERAL_CONFIG["save_dir"],file_name,"broadcast.mp3"), "wb") as f:
-            f.write(tts_bytes)
+        if tts_bytes:
+            with open(os.path.join(GENERAL_CONFIG["save_dir"],file_name,"broadcast.mp3"), "wb") as f:
+                f.write(tts_bytes)
+        else:
+            logger.error("TTS bytes is empty")
+        logger.info(f"File {file_name} is processed")
 
 
 

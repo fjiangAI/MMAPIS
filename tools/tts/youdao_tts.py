@@ -1,4 +1,5 @@
 from MMAPIS.tools.tts.base_tts import TTSConverter
+from MMAPIS.config.config import GENERAL_CONFIG
 import requests
 import hashlib
 import time
@@ -64,13 +65,8 @@ class YouDaoTTSConverter(TTSConverter):
                                 return_bytes: bool = False,
                                 save_dir:str = None):
         text_list = self.split_text(text, max_len=1000)
-        lens = [len(i) for i in text_list]
         results = self.multi_processing(text_list, num_processes=num_processes)
         flag = all([r[0] for r in results])
-        print("return_bytes",return_bytes)
-        for r in results:
-            print(r[0],"res:",len(r[1]),"type:",type(r[1]))
-        print("flag",flag)
         if flag:
             bytes_list = [r[1] for r in results]
             bytes = b''.join(bytes_list)
@@ -82,17 +78,19 @@ class YouDaoTTSConverter(TTSConverter):
         else:
             return flag, None
 
+
     def save(self,bytes_data, save_dir):
         millis = int(round(time.time() * 1000))
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        if not save_dir:
+            save_dir = os.path.join(GENERAL_CONFIG['save_dir'],"speech_output")
+        os.makedirs(save_dir, exist_ok=True)
         file_path = os.path.join(save_dir, str(millis) + ".mp3")
         with open(file_path, 'wb') as fo:
             fo.write(bytes_data)
         print(f"File saved at {file_path}")
         return file_path
 
-    def playsound(self,data:Union[str,bytes,Path]):
+    def play_sound(self,data:Union[str,bytes,Path],save_dir:str = None):
         if isinstance(data,bytes):
             file_path = self.save(data,save_dir="./res/speech_output/")
             playsound(file_path)
@@ -118,4 +116,4 @@ if __name__ == "__main__":
 'Welcome to our discussion, today we will introduce a paper titled "Attention Is All You Need," with primary authors including Vaswani et al. The paper proposes a network architecture called the Transformer that relies solely on attention mechanisms, eliminating the need for recurrent or convolutional neural networks.\n\nNext, we will delve into the model architecture of the Transformer. The core research model consists of an encoder and a decoder, both composed of stacked layers. The encoder stack includes multi-head self-attention mechanisms and position-wise fully connected feed-forward networks. The decoder stack performs multi-head attention over the output of the encoder stack and modifies the self-attention sub-layer to ensure autoregressive generation of output symbols. The attention mechanism employed is called Scaled Dot-Product Attention, which allows the model to attend to different positions within the input sequence efficiently. Multi-Head Attention is introduced to enable joint attention to different representation subspaces.\n\nThe empirical analysis on machine translation tasks demonstrates the effectiveness of the Transformer model. It achieves superior translation quality compared to existing models, including ensembles, with a BLEU score of 28.4 on the WMT 2014 English-to-German translation task and a new state-of-the-art BLEU score of 41.8 on the WMT 2014 English-to-French translation task. The model also generalizes well to other tasks, such as English constituency parsing.\n\nThe experimental techniques involve training the Transformer on large-scale datasets using GPUs. The authors provide details on the data collection and processing methods, training hardware, and schedule. The Transformer\'s efficacy is supported by substantial improvements in translation quality, parallelizability, and training time compared to previous models.\n\nHowever, it is important to note that the summary lacks specific quantitative measurements to support the claims made about the model\'s performance. Including these measurements would enhance the clarity and credibility of the summary. Additionally, the limitations or challenges encountered in the experimental analysis are not mentioned, which could provide a more balanced perspective on the findings of the paper.\n\nIn conclusion, the paper "Attention Is All You Need" introduces the Transformer model, a network architecture that relies solely on attention mechanisms. The model achieves superior translation quality, captures long-range dependencies, and enables parallelization while requiring less training time compared to previous models. The empirical analysis validates the effectiveness of the Transformer and its potential for advancing the field of machine translation and natural language processing.'
     """
     flag, bytes_content = youdao_tts.convert_texts_to_speech(text,return_bytes=True)
-    youdao_tts.playsound(bytes_content)
+    youdao_tts.play_sound(bytes_content)

@@ -2,12 +2,14 @@ import requests
 import json
 
 class LLMSummarizer:
-    def __init__(self, api_key, base_url, model_config={},proxy=None,**kwargs):
+    def __init__(self, api_key, base_url, model_config={},proxy=None,prompt_ratio:float = 0.8, **kwargs):
         self.api_key = api_key
         self.base_url = base_url
         self.settings = kwargs
         self.init_model(model_config)
         self.proxy = proxy
+        self.prompt_ratio = prompt_ratio
+        self.messages = []
 
     def init_model(self, model_config):
         default_config = {

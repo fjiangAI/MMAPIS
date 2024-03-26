@@ -206,9 +206,9 @@ class ArxivCrawler(CrawlerBase):
             articles = tqdm(articles)
             for article in articles:
                 dir_name = article.pdf_url.split('/')[-1].replace('.', '_')
-                articles.set_description(f"Downloading {article.pdf_url} to dir: {dir_name}")
                 file_name = dir_name + '.pdf'
                 file_path = osp.join(self.save_dir, dir_name, file_name)
+                articles.set_description(f"Downloading {article.pdf_url} to dir: {osp.abspath(file_path)}")
                 self.download_pdf(article_url=article.pdf_url,
                                   file_path=file_path,
                                   )
@@ -233,6 +233,7 @@ class ArxivCrawler(CrawlerBase):
                 dir_name = article.pdf_url.split('/')[-1].replace('.', '_')
                 file_name = dir_name + '.pdf'
                 file_path = osp.join(self.save_dir, dir_name, file_name)
+                articles.set_description(f"Downloading {article.pdf_url} to dir: {osp.abspath(file_path)}")
                 self.download_pdf(article_url=article.pdf_url,
                                   file_path=file_path,
                                   )

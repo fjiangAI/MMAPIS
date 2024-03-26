@@ -43,22 +43,27 @@ def download_pdf(pdf_url: Union[str,Path],
     download pdf from url
     Args:
         pdf_url: pdf url
-        save_dir: save dir
+        save_dir: save directory
+        pdf_name: pdf name
+        temp_file: if True, add timestamp to the file name
 
-    Returns: save path
+    Returns:
 
-        """
+    """
     try:
         response = requests.get(pdf_url)
         if pdf_name is None:
             pdf_name = pdf_url.split("/")[-1].replace('.', '_')
-            save_dir = Path(save_dir) / Path(pdf_name).stem
+        save_dir = Path(save_dir) / Path(pdf_name).stem
         if temp_file:
             temp_t = datetime.now().strftime("%Y%m%d_%H%M")
             pdf_name = f"{temp_t}_{pdf_name}"
         pdf_path = Path(save_dir) / (str(pdf_name) + ".pdf")
         if not pdf_path.parent.exists():
             pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        if pdf_path.exists():
+            logging.info(f"pdf {pdf_path} already exists")
+            return True, pdf_path
         with open(pdf_path, 'wb') as pdf_file:
             pdf_file.write(response.content)
         logging.info(f"download pdf from {pdf_url} to {pdf_path}")

@@ -2,6 +2,9 @@
 
 # ✨ Latest News
 
+- [03/26/2024]: Launch of Interactive Functionality in Streamlit.
+
+- [03/26/2024]: Deployment of Multimodal Question Answering (QA) Generation System.
 - [02/20/2024] : Incorporate updates to Open APIs complete with relevant calling methods in [api_usage.ipynb](client/api_usage.ipynb) 
 
 - [02/05/2024] : Release the code of preprocessing
@@ -13,7 +16,7 @@
 - [x] Open the base code of each part
 
 - [x] Open the API of each part in the whole workflow to convenient user 
-- [ ] Optimize the User Intereface(UI) to better improve user's interactive experience
+- [x] Optimize the User Intereface(UI) to better improve user's interactive experience
 - [ ] Speed up code
 
 
@@ -43,9 +46,13 @@ Our Diverse Multimodal User Interface Module, built on a Streamlit-based interfa
 
 ![](./assets/demo_new.png)
 
-Following is an output example from the *blog generation*, using the pdf of [Attention Is All You Need](https://arxiv.org/pdf/1706.03762.pdf) as the source."
+[Examples]( example ) serve as output illustrations derived from utilizing the PDF of [Attention Is All You Need](https://arxiv.org/pdf/1706.03762.pdf) as the foundational source material in the application of :
 
-![image-20240208195652718](assets/image-20240208195652718.png)
+- [*blog generation* ](example\blog.html )
+- [*speech generation*](example\speech.html) 
+- [*recomend generation*](example\recommend.html) 
+
+
 
 # 📚 Evalution
 
@@ -64,10 +71,14 @@ Please refer to [tech report](https://arxiv.org/abs/2401.09150) for more analysi
 ```
 MMAPIS/
 ├── main.py			     # Main workflow
-├── backend.py                # Initiates the backend services and manages the     │       					APIs for each segment
-├── res/                      # Output file dir
+├── backend.py                # Initiates the backend services and manages the     
+│       						APIs for each segment
+├── res/                      # Output file dir of backend
+│
+├── app_res/                  # Output file dir of frontend
 │
 ├── config/                   # Configuration files
+│   ├── templates/      	  # templates
 │   └── config.yaml           # Central configuration file (YAML format)
 │   └── config.py             # Main configuration file
 │   └── logging.ini           # Main logging format file
@@ -103,7 +114,8 @@ MMAPIS/
 │   │
 │   ├── summarization/        # Two-stage summarization process
 │   │   ├── section_summarizer.py # Script for section-level summary
-│   │   └── summary_integrator.py # Script for integrating section summaries,i.e.                                                                               │   │						 produce document-level summary
+│   │   └── summary_integrator.py # Script for integrating section summaries,i.e.                                                                               
+│   │						 produce document-level summary
 │   │
 │   └── downstream/           # Downstream functionalities
 │       ├── paper_recommendation/ # Paper recommendation module
@@ -119,10 +131,8 @@ MMAPIS/
 │           └── image_integration.py
 │
 └── client/                   # Client-side visualization interface
-    ├── input/                # Input processing
-    ├── processing/           # Data processing
-    ├── output/               # Output presentation
-    └── display/              # UI display elements
+    ├── api_usage.ipynb       # APIs reference
+    └── app.py                # Interactive Functionality in Streamlit.
 
 ```
 
@@ -176,7 +186,8 @@ MMAPIS/
    ├── res/                       # Output file dir
    │   ├── xxx/                	 # File name as dirname
    │   │   ├── img/		      # Save dir of markdown image 
-   │   │   ├── xxx.md             # Raw output markdown file of xxx.pdf with 	                                                                                   │   │						 plian text
+   │   │   ├── xxx.md             # Raw output markdown file of xxx.pdf with 	                                                                                   
+   │   │						 plian text
    │   │   ├── xxx_raw_aligned.md # Aligned raw markdown file
    │   │   ├── broadcast.mp3      # the mp3 output of broadcast style generation 
    │   │   ├── broadcast.md       # the text of broadcast style generation 
@@ -185,7 +196,24 @@ MMAPIS/
    │   │   └── xxx_blog.md        # Blog style generation
    ```
 
-   
+7. To operationalize the frontend and backend components, initiate your server and client by executing the following procedures:
+
+	- For the backend:
+
+	  ```bash
+	  $ cd path/to/MMAPIS
+	  $ uvicorn backend:app --reload --port <your port> --host <your host>
+	  ```
+
+	- For the frontend:
+
+	  ```bash
+	  $ cd path/to/MMAPIS
+	  $ cd client
+	  $ streamlit run app.py --port <your port>
+	  ```
+	  
+	  It is important to note that when employing the Multimodal Question Answering (QA) Generation functionality, it is advisable to consult the `Multimodal QA Generation` section within [api_usage.ipynb](client\api_usage.ipynb) to optimize your usage.
 
 
 
