@@ -111,19 +111,4 @@ class Img_QA_Generator(GPT_Helper):
             return flag, self.messages
 
 
-if __name__ == "__main__":
 
-    api_key = CONFIG["openai"]["api_key"]
-    base_url = CONFIG["openai"]["base_url"]
-    model_config = CONFIG["openai"]["model_config"]
-    qa_prompts = APPLICATION_PROMPTS["multimodal_qa"]
-    user_intent = Img_QA_Generator(api_key, base_url,prompt_ratio=0.6)
-    print("user_intenter: ",user_intent)
-    user_input = "What's in the picture?"
-    title_list = ["Introduction", "Background of QA", "Proposed Method", "Eval & Results", "Conclusion"]
-    flag,content = user_intent.request_img_api(
-        user_input = user_input,
-        url_lst=["./Model Architecture_1.png"]
-    )
-
-    print("content: \n",content)

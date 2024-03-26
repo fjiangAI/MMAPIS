@@ -297,15 +297,3 @@ class GPT_Helper(LLMSummarizer):
 
 
 
-if __name__ == "__main__":
-    api_key = CONFIG["openai"]["api_key"]
-    base_url = CONFIG["openai"]["base_url"]
-    model_config = CONFIG["openai"]["model_config"]
-    
-    chatgpt = GPT_Helper(api_key=api_key, base_url=base_url, model_config=model_config)
-    print(chatgpt)
-    flag,summary = chatgpt.summarize_text("This is a test", system_messages="This is a test",reset_messages=False,response_only=False)
-    if flag:
-        print("summary: ", summary)
-    else:
-        print("error:",summary)

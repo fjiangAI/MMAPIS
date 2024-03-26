@@ -49,25 +49,5 @@ class Summary_Integrator(GPT_Helper):
         return msg
 
 
-if __name__ == "__main__":
-    api_key = CONFIG["openai"]["api_key"]
-    base_url = CONFIG["openai"]["base_url"]
-    model_config = CONFIG["openai"]["model_config"]
 
-    integrator = Summary_Integrator(api_key=api_key, base_url=base_url, model_config=model_config)
-    print("integrator: ", integrator)
-    summarized_text = "./summary.md"
-    with open(summarized_text, 'r') as f:
-        section_summaries = f.read()
-    integrate_prompts = INTEGRATE_PROMPTS
-    print("integrate_prompts: ", integrate_prompts)
-    flag, response = integrator.integrate_summary(section_summaries=section_summaries,
-                                                  integrate_prompts=integrate_prompts,
-                                                  response_only=True,
-                                                  reset_messages=True)
-
-    print("flag: ", flag)
-    print("response: ", response)
-    with open("./integrated_summary.md", 'w') as f:
-        f.write(response)
 

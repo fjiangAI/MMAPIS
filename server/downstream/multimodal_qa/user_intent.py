@@ -105,18 +105,5 @@ class UserIntent(GPT_Helper):
 
 
 
-if __name__ == "__main__":
-
-    api_key = CONFIG["openai"]["api_key"]
-    base_url = CONFIG["openai"]["base_url"]
-    model_config = CONFIG["openai"]["model_config"]
-    qa_prompts = APPLICATION_PROMPTS["multimodal_qa"]
-    user_intent = UserIntent(api_key, base_url,prompt_ratio=0.6)
-    print("user_intenter: ",user_intent)
-    user_input = "what's the Figure4 about?"
-    flag,content = user_intent.get_intend(user_input,prompts=qa_prompts)
-    print("content: ",content)
-    print("-"*100)
-
 
 

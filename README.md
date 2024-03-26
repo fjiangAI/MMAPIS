@@ -48,9 +48,9 @@ Our Diverse Multimodal User Interface Module, built on a Streamlit-based interfa
 
 [Examples]( example ) serve as output illustrations derived from utilizing the PDF of [Attention Is All You Need](https://arxiv.org/pdf/1706.03762.pdf) as the foundational source material in the application of :
 
-- [*blog generation* ](example\blog.html )
-- [*speech generation*](example\speech.html) 
-- [*recomend generation*](example\recommend.html) 
+- [*blog generation* ](example/blog.html )
+- [*speech generation*](example/speech.html) 
+- [*recomend generation*](example/recommend.html) 
 
 
 
@@ -213,7 +213,7 @@ MMAPIS/
 	  $ streamlit run app.py --port <your port>
 	  ```
 	  
-	  It is important to note that when employing the Multimodal Question Answering (QA) Generation functionality, it is advisable to consult the `Multimodal QA Generation` section within [api_usage.ipynb](client\api_usage.ipynb) to optimize your usage.
+	  It is important to note that when employing the Multimodal Question Answering (QA) Generation functionality, it is advisable to consult the `Multimodal QA Generation` section within [api_usage.ipynb](client/api_usage.ipynb) to optimize your usage.
 
 
 

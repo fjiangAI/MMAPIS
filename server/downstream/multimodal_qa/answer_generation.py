@@ -334,26 +334,3 @@ class MultiModal_QA_Generator():
         return img_urls
 
 
-if __name__ == "__main__":
-    answer_generation = MultiModal_QA_Generator(api_key=OPENAI_CONFIG["api_key"],
-                                                base_url=OPENAI_CONFIG["base_url"],
-                                                model_config= OPENAI_CONFIG["model_config"],
-                                                proxy=None,
-                                                prompt_ratio=0.8)
-    raw_path = "./raw.md"
-    document_level_summary_path = "./test.md"
-    with open(raw_path, "r", encoding="utf-8") as f:
-        raw = f.read()
-    with open(document_level_summary_path, "r", encoding="utf-8") as f:
-        document_level_summary = f.read()
-
-    answer_generation.multi_round_chat(
-        document_level_summary=document_level_summary,
-        article=raw,
-        max_round=10,
-        prompts=APPLICATION_PROMPTS["multimodal_qa"],
-        init_grid=ALIGNMENT_CONFIG['init_grid'],
-        max_grid=ALIGNMENT_CONFIG['max_grid'],
-        ignore_titles=OPENAI_CONFIG['ignore_title'],
-        response_only=True,
-    )

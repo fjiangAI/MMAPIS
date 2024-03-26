@@ -224,11 +224,3 @@ def __repr__(self):
     return f"NougatPredictor(batch_size={self.batch_size},out={self.out},recompute={self.recompute},markdown={self.markdown},proxy={self.proxy},headers={self.headers})"
 
 
-# Example usage
-if __name__ == "__main__":
-    nougat_predictor = NougatPredictor()
-    print("nougat_predictor: ",nougat_predictor)
-    pdfs = NOUGAT_CONFIG["pdf"]
-    files = nougat_predictor.pdf2md_text(pdfs)
-    for file in files:
-        print(repr(file))

@@ -60,17 +60,3 @@ def assgin_prompts(
         else:
             return key,summary_prompts.get(key,'')
 
-if '__main__' == __name__:
-    file_path = "Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper.mmd"
-    with open(file_path, 'r', encoding='utf-8') as f:
-        text = f.read()
-    print("read file")
-    init_grid = 2
-    ignore_titles = ['references']
-    article = sectional_split(text,file_path,init_grid,ignore_titles)
-    print(article)
-    print(article.grid)
-    print("title:",article.titles)
-    print("author:",article.authors)
-    print("affiliations:",article.affiliations)
-    print("sections:",article.sections)

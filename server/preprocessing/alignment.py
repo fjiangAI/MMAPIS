@@ -278,23 +278,6 @@ def img_ls_to_md(img_ls:Union[List[str],str],
 
 
 
-if __name__ == "__main__":
-    file_path = "../../res/yan22b/yan22b.md"
-    pdf_path = "../../res/yan22b/yan22b.pdf"
-    document = file_path
-    save_dir = './24_27'
-    with open(file_path, 'r', encoding='utf-8') as f:
-        text = f.read()
-    with open(document, 'r', encoding='utf-8') as f:
-        document = f.read()
-    file_path = img_txt_alignment(
-        text = document,
-        pdf = pdf_path,
-        save_dir = save_dir,
-        init_grid=3,
-        raw_md_text=text,
-    )
-
 
 
 

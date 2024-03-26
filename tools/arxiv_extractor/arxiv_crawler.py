@@ -329,19 +329,5 @@ class ArxivCrawler(CrawlerBase):
                 text[i - 1] = text[i - 1] + '\\\\'
         return ' '.join(text)
 
-# Example usage
-if __name__ == "__main__":
-    logger = init_logging(logger_mode=LOGGER_MODES)
-    arxiv = ArxivCrawler(proxy=GENERAL_CONFIG['proxy'],headers=GENERAL_CONFIG['headers'],download=ARXIV_CONFIG['download'],save_dir=GENERAL_CONFIG['save_dir'])
-    print(arxiv)
-    # keyword_articles = arxiv.run_keyword_crawler(key_word=ARXIV_CONFIG["key_word"], max_return= ARXIV_CONFIG["max_return"],return_md=False)
-    #
-    # for article in keyword_articles:
-    #     print(repr(article))
-    # print("*" * 100)
-    daily_articles = arxiv.run_daily_crawler(daily_type=ARXIV_CONFIG["daily_type"], max_return=10,return_md=False)
-    for d_article in daily_articles:
-        print(d_article)
-    arxiv.download_pdf(d_article.pdf_url, f"{d_article.pdf_url.split('/')[-1].replace('.', '_', 1)}.pdf")
 
 

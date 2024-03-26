@@ -27,8 +27,3 @@ class NougatHelper:
 
         return "Rich text content"
 
-# Example usage
-if __name__ == "__main__":
-    nougat_helper = NougatHelper()
-    rich_text = nougat_helper.convert_pdf_to_rich_text("path/to/document.pdf")
-    print(rich_text)

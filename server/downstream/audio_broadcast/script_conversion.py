@@ -51,28 +51,3 @@ class Broadcast_Generator(GPT_Helper):
         msg = f"Broadcast_GPT(api_key:{reprlib.repr(self.api_key)},base_url:{self.base_url},model:{self.model}, temperature:{self.temperature}, max_tokens:{self.max_tokens}, top_p:{self.top_p}, frequency_penalty:{self.frequency_penalty}, presence_penalty:{self.presence_penalty})"
         return msg
 
-if __name__ == "__main__":
-    logger = init_logging(logger_mode=LOGGER_MODES)
-    user_input_path = "../integrate.md"
-    with open(user_input_path, 'r') as f:
-        user_input = f.read()
-
-    api_key = CONFIG["openai"]["api_key"]
-    base_url = CONFIG["openai"]["base_url"]
-    model_config = CONFIG["openai"]["model_config"]
-
-
-    section_summaries_path = "../summary.md"
-    with open(section_summaries_path, 'r') as f:
-        section_summaries = f.read()
-    print("section_summaries: ", reprlib.repr(section_summaries))
-    broadcast_prompts = APPLICATION_PROMPTS["broadcast_prompts"]
-    broadcast_generator = Broadcast_Generator(api_key=api_key, base_url=base_url, model_config=model_config)
-    flag,content = broadcast_generator.broadcast_generation(document_level_summary=user_input,
-                                                          section_summaries=section_summaries,
-                                                          broadcast_prompts=broadcast_prompts,
-                                                          reset_messages=True,
-                                                          response_only=True,
-                                                            )
-    print("flag: ", flag)
-    print("content: ", content)

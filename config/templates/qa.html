@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Multimodal QA System</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/lib/marked.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'a']
+            },
+            loader: {load: ['[tex]/html']}
+        };
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        #content-wrapper {
+            display: flex;
+            height: 100vh;
+        }
+
+        #article-container {
+            flex: 4;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #chat-container {
+            flex: 3;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .dialog {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .input-area {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: none;
+        }
+
+        button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #sidebar {
+            width: 20vw;
+            background-color: #343a40;
+            color: #fff;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 1;
+        }
+
+        #sidebar.collapsed {
+            width: 5vw;
+        }
+
+        #sidebar .sidebar-header {
+            padding: 20px;
+            background-color: #212529;
+        }
+
+        #sidebar ul.components {
+            padding: 0;
+        }
+
+        #sidebar ul li {
+            list-style: none;
+        }
+
+        #sidebar ul li a {
+            padding: 10px 20px;
+            font-size: 1rem;
+            display: block;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.3s;
+        }
+
+
+        #sidebar ul li a:hover {
+            color: #fff;
+            background-color: #495057;
+            text-decoration: none;
+        }
+
+        #sidebar ul li.active>a {
+            color: #fff;
+            background-color: #495057;
+        }
+
+        #sidebar ul li ul li a {
+            padding: 10px 30px;
+            font-size: 0.9rem;
+        }
+
+        a[data-toggle="collapse"] {
+            position: relative;
+        }
+
+        #sidebar .sidebar-toggler {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            display: block;
+            color: #fff;
+        }
+
+        #sidebar.collapsed .sidebar-toggler {
+            transform: rotate(180deg);
+        }
+
+        #sidebar.collapsed ul.components {
+            display: none;
+        }
+
+        .markdown-body {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3,
+        .markdown-body h4,
+        .markdown-body h5,
+        .markdown-body h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        .markdown-body h1 {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #123456;
+            border-bottom: 2px solid #123456;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            padding-bottom: 0.3em;
+        }
+
+        .markdown-body h2 {
+            font-size: 2em;
+            font-weight: bold;
+            color: #123456;
+            border-bottom: 2px solid #123456;
+            margin-top: 0.8em;
+            margin-bottom: 0.4em;
+            padding-bottom: 0.2em;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.75em;
+            font-weight: bold;
+            color: #123456;
+            margin-top: 0.7em;
+            margin-bottom: 0.35em;
+        }
+        .markdown-body h1::before {
+            content: "H1 - ";
+            color: #888;
+            font-size: 0.3em;
+        }
+
+        .markdown-body h2::before {
+            content: "H2 - ";
+            color: #888;
+            font-size: 0.3em;
+        }
+
+        .markdown-body h3::before {
+            content: "H3 - ";
+            color: #888;
+            font-size: 0.3em;
+        }
+
+        .markdown-body a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+
+        .markdown-body a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+        }
+
+        .markdown-body code {
+            background-color: rgba(27,31,35,.05);
+            border-radius: 3px;
+            font-size: 85%;
+            margin: 0;
+            padding: .2em .4em;
+        }
+    </style>
+</head>
+<body>
+    <script id="article" type="text/plain" style="display: none;">
+{{text}}
+    </script>
+
+    <script id="document_level_summary" type="text/plain" style="display: none;">
+{{document_level_summary}}
+    </script>
+    <div id="content-wrapper">
+        <div id="sidebar-container">
+        <nav id="sidebar" class="collapsed">
+            <div class="sidebar-header">
+                <span>Contents</span>
+                <span class="sidebar-toggler"><i class="fas fa-chevron-left"></i></span>
+            </div>
+            <ul class="components">
+                <!-- Table of contents will be generated here -->
+            </ul>
+        </nav>
+        </div>
+        <div id="article-container" class="markdown-body">
+            <!-- Markdown content will be placed here -->
+        </div>
+        <div id="chat-container">
+            <div class="dialog">
+                <div id="messages"></div>
+                <div class="input-area">
+                    <textarea id="user-input" placeholder="Type your message here..."></textarea>
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var chatHistory = []; // create an empty array to store chat history
+        var multimodalQARequest = {  // backend request object
+        api_key: "{{api_key}}", // api key here
+        base_url: "{{base_url}}", // base url here
+        user_input: "default user input", // set default user input
+        document_level_summary: document.getElementById('document_level_summary').textContent, // get document level summary
+        session_message: chatHistory, 
+        article: document.getElementById('article').textContent,
+        };
+
+
+        marked.setOptions({
+            breaks: true,
+            pedantic: false,
+            smartLists: true,
+            smartypants: false
+        });
+
+        var markdownContent = document.getElementById('document_level_summary').textContent;
+
+        var html = marked(markdownContent);
+        document.getElementById('article-container').innerHTML = html;
+
+        function generateTableOfContents() {
+            var headings = document.querySelectorAll('#article-container h1, #article-container h2, #article-container h3');
+            var toc = '';
+            var currentLevel = 0;
+
+            headings.forEach(function (heading) {
+                var level = parseInt(heading.tagName.charAt(1));
+                var text = heading.textContent;
+                var id = heading.id;
+
+                if (level > currentLevel) {
+                    toc += '<ul>';
+                } else if (level < currentLevel) {
+                    toc += '</li></ul>'.repeat(currentLevel - level);
+                    toc += '</li>';
+                } else {
+                    toc += '</li>';
+                }
+
+                toc += '<li><a href="#' + id + '">' + text + '</a>';
+                currentLevel = level;
+            });
+
+            toc += '</li></ul>'.repeat(currentLevel);
+            document.querySelector('#sidebar ul.components').innerHTML = toc;
+        }
+
+        generateTableOfContents();
+
+        // Sidebar toggler
+        const sidebar = document.getElementById('sidebar');
+        const sidebarContainer = document.getElementById('sidebar-container');
+        const sidebarToggler = sidebar.querySelector('.sidebar-toggler');
+
+        sidebarToggler.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            sidebarContainer.classList.toggle('collapsed');
+        });
+
+        // Send message to the chat
+        function sendMessage() {
+        const userInput = document.getElementById('user-input').value;
+        if (userInput.trim() === '') return;
+
+        addMessageToDialog('user', userInput);
+        document.getElementById('user-input').value = '';
+        multimodalQARequest.user_input = userInput;  // update user input in the request object
+        for (var key in multimodalQARequest) {
+        console.log("Type of value for key " + key + " : " + typeof multimodalQARequest[key]);
+    }
+        fetch('/Multimodal_qa', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(multimodalQARequest) // send the request object to the backend
+        })
+        .then(response => response.json())
+        .then(data => {
+                addMessageToDialog('assistant', data.message);
+                chatHistory.push({role: 'user', content: userInput});    // update chat history
+                chatHistory.push({role: 'assistant', content: data.message});
+            }
+            )
+        .catch(error => console.error(error));
+        }
+
+        function addMessageToDialog(sender, message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+
+            const avatarImg = document.createElement('img');
+            avatarImg.classList.add('avatar');
+            avatarImg.src = `/index/img/${sender}.png`;
+            avatarImg.alt = sender;
+            messageDiv.appendChild(avatarImg);
+
+            const messageSpan = document.createElement('span');
+            messageSpan.innerHTML = marked(message);
+            messageDiv.appendChild(messageSpan);
+
+            messagesDiv.appendChild(messageDiv);
+            MathJax.typesetPromise();
+        }
+
+        const renderer = new marked.Renderer();
+        renderer.link = function (href, title, text) {
+            const link = marked.Renderer.prototype.link.call(this, href, title, text);
+            return link.replace("<a", "<a target='_blank' rel='noopener noreferrer'");
+        }
+        marked.setOptions({
+            renderer: renderer,
+            breaks: true
+        });
+
+        document.getElementById("user-input").addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                if (!event.shiftKey) {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            }
+        });
+
+        MathJax.typesetPromise();
+
+    </script>
+</body>
+</html>

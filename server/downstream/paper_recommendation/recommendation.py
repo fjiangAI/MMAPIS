@@ -128,31 +128,6 @@ class Paper_Recommender(GPT_Helper):
         return f"Paper_Recommender(api_key={self.api_key},base_url={self.base_url},proxy={self.proxy}),model:{self.model}, temperature:{self.temperature}, max_tokens:{self.max_tokens}, top_p:{self.top_p}, frequency_penalty:{self.frequency_penalty}, presence_penalty:{self.presence_penalty})"
 
 
-if __name__ == "__main__":
-    logger = init_logging(LOGGER_MODES)
-    logger.info("Initializing Paper Recommender")
-    api_key = CONFIG["openai"]["api_key"]
-    base_url = CONFIG["openai"]["base_url"]
-    model_config = CONFIG["openai"]["model_config"]
-    recommendation_prompts = APPLICATION_PROMPTS["score_prompts"]
-    paper_recommender = Paper_Recommender(api_key=api_key, base_url=base_url, model_config=model_config)
-    print("paper_recommender:",paper_recommender)
-    article_path = "../summary.md"
-    with open(article_path, 'r') as f:
-        article = f.read()
-    document_level_summary_path = "../integrate.md"
-    with open(document_level_summary_path, 'r') as f:
-        document_level_summary = f.read()
-
-    flag, content = paper_recommender.recommendation_generation(document_level_summary=document_level_summary,
-                                                                article=article,
-                                                                score_prompts=recommendation_prompts,
-                                                                reset_messages=True,
-                                                                response_only=True)
-    print(flag)
-    print("-"*20)
-    print(content)
-    print(len(content))
 
 
 

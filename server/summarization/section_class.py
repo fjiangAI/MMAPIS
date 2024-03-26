@@ -549,12 +549,3 @@ class Article():
         return iter([[i.title,i.text] for i in self.sections])
 
 
-if __name__ == "__main__":
-    text = "In this paper, we propose a novel method for image captioning with verb-specific semantic roles."
-    title = "## 1. Introduction"
-    group = subgroup(
-        title= title,
-        text= text
-    )
-    print(type(group))
-    print(isinstance(group,Iterable))

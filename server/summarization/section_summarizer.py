@@ -215,28 +215,3 @@ class Section_Summarizer(GPT_Helper):
 
 
 
-if __name__ == "__main__":
-    logger = init_logging(logger_mode=LOGGER_MODES)
-    section_summarizer = Section_Summarizer(api_key=OPENAI_CONFIG["api_key"],
-                                            base_url=OPENAI_CONFIG["base_url"],
-                                            model_config=OPENAI_CONFIG["model_config"],
-                                            proxy=GENERAL_CONFIG["proxy"],
-                                            prompt_ratio=OPENAI_CONFIG["prompt_ratio"],
-                                            rpm_limit=OPENAI_CONFIG["rpm_limit"],
-                                            num_processes=OPENAI_CONFIG["num_processes"],
-                                            ignore_titles=OPENAI_CONFIG["ignore_title"],
-                                            )
-    article_path = "2403_08777.md"
-    with open(article_path,"r",encoding="utf-8") as f:
-        article_text = f.read()
-
-    flag , article = section_summarizer.section_summarize(article_text,
-                                                   file_name="Chen_Human-Like_Controllable_Image_Captioning_With_Verb-Specific_Semantic_Roles_CVPR_2021_paper",
-                                                   summary_prompts=SECTION_PROMPTS,
-                                                   init_grid=2,
-                                                   max_grid=4)
-
-
-    with open("summary.md","w",encoding="utf-8") as f:
-        f.write(article)
-

@@ -70,28 +70,5 @@ class Blog_Generator():
         msg = f"Blog_GPT(api_key:{reprlib.repr(self.blog_script_generator.api_key)},base_url:{self.blog_script_generator.base_url},model:{self.blog_script_generator.model}, temperature:{self.blog_script_generator.temperature}, max_tokens:{self.blog_script_generator.max_tokens}, top_p:{self.blog_script_generator.top_p}, frequency_penalty:{self.blog_script_generator.frequency_penalty}, presence_penalty:{self.blog_script_generator.presence_penalty})"
         return msg
 
-if __name__ == "__main__":
-    api_key = OPENAI_CONFIG['api_key']
-    base_url = OPENAI_CONFIG['base_url']
-    model_config = OPENAI_CONFIG['model_config']
-    blog_prompts = APPLICATION_PROMPTS['blog_prompts']
-    integration_path = "2402_03753/2402_03753_integrated.md"
-    with open(integration_path, 'r') as f:
-        integration = f.read()
-    section_summaries_path = "2402_03753/2402_03753.md"
-    with open(section_summaries_path, 'r') as f:
-        section_summaries = f.read()
-    print(Article(section_summaries).extra_info)
-    pdf = "./2402_03753/2402_03753.pdf"
-    # blog_generator = Blog_Generator(api_key=api_key,
-    #                                base_url=base_url,
-    #                                model_config=model_config,
-    #                                 proxy=GENERAL_CONFIG['proxy'])
-    # flag, response = blog_generator.blog_generation(pdf=pdf,
-    #                                                document_level_summary=integration,
-    #                                                section_summaries=section_summaries,
-    #                                                blog_prompts=blog_prompts,
-    #                                                 save_dir="./res/")
-    # print(response)
-    # print(flag)
+
 

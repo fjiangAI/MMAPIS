@@ -74,9 +74,4 @@ def download_pdf(pdf_url: Union[str,Path],
 
 
 
-if __name__ == '__main__':
-
-    file_list = ["./data/111.pdf",Path("./data/222.pdf")]
-    text_list = ["111","222"]
-    print(save_mmd_file(save_texts=text_list,file_names=file_list,save_dirs="./res/out"))
 

@@ -50,31 +50,3 @@ class Blog_Script_Generator(GPT_Helper):
         msg = f"Blog_GPT(api_key:{reprlib.repr(self.api_key)},base_url:{self.base_url},model:{self.model}, temperature:{self.temperature}, max_tokens:{self.max_tokens}, top_p:{self.top_p}, frequency_penalty:{self.frequency_penalty}, presence_penalty:{self.presence_penalty})"
         return msg
 
-if __name__ == "__main__":
-
-    api_key = CONFIG["openai"]["api_key"]
-    base_url = CONFIG["openai"]["base_url"]
-    model_config = CONFIG["openai"]["model_config"]
-    blog_prompts = APPLICATION_PROMPTS["blog_prompts"]
-    user_input_path = "../data/pdf_content1.md"
-    with open(user_input_path, 'r') as f:
-        user_input = f.read()
-    section_summaries_path = "../data/pdf_content1.txt"
-    with open(section_summaries_path, 'r') as f:
-        section_summaries = f.read()
-
-    blog_generator = Blog_Script_Generator(api_key=api_key,
-                                    base_url=base_url,
-                                    model_config=model_config)
-    print(blog_generator)
-    flag,response = blog_generator.blog_script_generation(
-                                    document_level_summary=user_input,
-                                    section_summaries=section_summaries,
-                                    blog_prompts=blog_prompts,
-                                    reset_messages=True,
-                                    response_only=True,
-                                    )
-    print("flag:",flag)
-    print("response:",response)
-    with open('blog.md','w') as f:
-        f.write(response)

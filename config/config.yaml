@@ -7,6 +7,9 @@ general:
   headers:
     "User-Agent": "xxx" # TODO: set your user-agent
   save_dir: "./res"
+  app_save_dir: "./app_res"
+  backend_url: "http://127.0.0.1:8000"
+  allowed_file_types: [".html",".css",".js",".png",".jpg",".jpeg",".pdf",".md"]
 
 arxiv:
   key_word: null # keyword can be str or list of str, and can be url itself. If search daily submission, set null
@@ -21,7 +24,7 @@ openai:
   ignore_title: ["reference","appendix","acknowledg"]
   base_url: "https:/xxxx" # TODO: set your base url
   rpm_limit: 3 # int,  0 means no limit, >0 means the max request per miniute
-  num_processes: 6 
+  num_processes: 6
   prompt_ratio: 0.8 # prompt_len / max_tokns, 0.8 means up to 80% of max tokens can be prompt
   model_config:
     model: "gpt-3.5-turbo-16k-0613"
@@ -34,7 +37,7 @@ openai:
 nougat:
   check_point : "./tools/nougat/pretrained_w"
   pdf : ["./data"]    # list of pdf path or pdf dir
-  recompute : true 
+  recompute : true
   markdown : true
 
 tts:

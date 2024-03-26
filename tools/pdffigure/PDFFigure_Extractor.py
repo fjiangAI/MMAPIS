@@ -144,21 +144,6 @@ class PDFFigureExtractor:
             logging.error(f"parser error: no img found in {self.pdf_path}")
             return {}
 
-# Example usage
-if __name__ == "__main__":
-    pdf_path = './111.pdf'
-    pdf_parser = PDFFigureExtractor(pdf_path)
-    x = pdf_parser.extract_figures_and_tables()
-    print("img_dict:",x)
-    for section_imgs in x:
-        for img in section_imgs.img_data:
-            plt.imshow(img)
-            plt.text(0, 0, section_imgs.section_name)
-            plt.show()
-
-    paths = pdf_parser.extract_save_figures()
-    for path in paths:
-        print(path)
 
 
 

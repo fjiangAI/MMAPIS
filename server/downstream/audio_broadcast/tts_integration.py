@@ -86,37 +86,6 @@ class BroadcastTTSGenerator():
         return self.tts_converter.save(bytes_content,save_dir=save_dir)
 
 
-if __name__ == "__main__":
 
-    tts_base_url = TTS_CONFIG['base_url']
-    tts_api_key = TTS_CONFIG['api_key']
-    app_secret = TTS_CONFIG['app_secret']
-    llm_api_key = OPENAI_CONFIG["api_key"]
-    llm_base_url = OPENAI_CONFIG["base_url"]
-    model_config = OPENAI_CONFIG["model_config"]
-    broadcast_tts_generator = BroadcastTTSGenerator(llm_api_key=llm_api_key,
-                                                    llm_base_url=llm_base_url,
-                                                    tts_base_url=tts_base_url,
-                                                    tts_api_key=tts_api_key,
-                                                    app_secret=app_secret,
-                                                    model_config=model_config,
-                                                    )
-    broadcast_prompts = APPLICATION_PROMPTS["broadcast_prompts"]
-    section_summaries_path = "../summary.md"
-    with open(section_summaries_path, 'r') as f:
-        section_summaries = f.read()
-
-    user_input_path = "../integrate.md"
-    with open(user_input_path, 'r') as f:
-        user_input = f.read()
-
-    flag,broadcast_script,bytes_content = broadcast_tts_generator.broadcast_tts_generation(document_level_summary=user_input,
-                                                                           section_summaries=section_summaries,
-                                                                           broadcast_prompts=broadcast_prompts,
-                                                                           return_bytes=True,
-                                                                            )
-    print(broadcast_script)
-    print("type of bytes_content:",type(bytes_content))
-    print("length of bytes_content:",len(bytes_content))
 
 
