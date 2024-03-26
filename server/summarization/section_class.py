@@ -206,11 +206,11 @@ class Article():
                  max_grid: int = 4,
                  ignore_title:list = ['appendix','reference','acknowledg'],
                  file_name:str = None,
-                 raw_document:str = '',
-                 section_summary:str = '',
-                 section_interpretation:str = '',
-                 document_summary:str = '',
-                 document_interpretation:str = '',
+                 # raw_document:str = '',
+                 # section_summary:str = '',
+                 # section_interpretation:str = '',
+                 # document_summary:str = '',
+                 # document_interpretation:str = '',
                 ):
         """
         :param article: str, article content
@@ -231,11 +231,11 @@ class Article():
         self.sections = self.get_sections(grid,max_grid)
         self._titles, self._authors,self._affiliations = self.get_title_contributors()
         self._grid = grid
-        self.raw_document = raw_document
-        self.section_summary = section_summary
-        self.document_summary = document_summary
-        self.section_interpretation = section_interpretation
-        self.document_interpretation = document_interpretation
+        # self.raw_document = raw_document
+        # self.section_summary = section_summary
+        # self.document_summary = document_summary
+        # self.section_interpretation = section_interpretation
+        # self.document_interpretation = document_interpretation
 
 
     def get_tables(self):

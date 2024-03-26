@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Research Digest: A Morning Briefing Broadcast</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'a']
+      },
+      loader: {load: ['[tex]/html']}
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+    }
+
+    .container {
+      max-width: 100vh;
+
+    }
+    .col-md-8.offset-md-2 {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        height: 100%;
+        }
+
+    .text-container {
+        max-height: 80vh; /* 80% of the viewport height */
+        max-width: 80vw;
+        height: 80vh; /* height is 80% of the viewport height */
+        width: 80vw; /* width is 80% of the viewport width */
+        overflow: auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .audio-controls {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-8 offset-md-2">
+        <div class="text-container">
+          <h2>Scholarly Briefing Script</h2>
+          <p id="text-content">
+ Welcome to our discussion. Today we will introduce a paper titled "Attention Is All You Need" by Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin.
+
+The paper presents a new network architecture called the Transformer, which relies solely on attention mechanisms and eliminates the need for recurrent or convolutional neural networks. The authors conducted experiments on machine translation tasks and demonstrated that the Transformer outperforms existing models in terms of quality, parallelizability, and training time. The model achieved a BLEU score of 28.4 on the WMT 2014 English-to-German translation task and established a new state-of-the-art BLEU score of 41.8 on the English-to-French translation task. Additionally, the authors successfully applied the Transformer to English constituency parsing.
+
+The paper builds upon existing literature in the field of reducing sequential computation by introducing the Transformer model. Previous models used convolutional neural networks but had limitations in learning dependencies between distant positions. In contrast, the Transformer model relies entirely on self-attention to compute representations of its input and output without using sequence-aligned RNNs or convolution. This innovative approach reduces sequential computation while maintaining the ability to learn dependencies between distant positions.
+
+The Transformer model utilizes an encoder-decoder structure for sequence transduction tasks. The encoder maps input symbol representations to continuous representations, while the decoder generates an output sequence of symbols based on these continuous representations. The model is auto-regressive and uses previously generated symbols as input for generating the next symbol. Both the encoder and decoder consist of six identical layers with residual connections and layer normalization. Each layer incorporates a multi-head self-attention mechanism and a fully connected feed-forward network.
+
+The attention mechanism in the Transformer model maps a query and a set of key-value pairs to an output, computed as a weighted sum of the values. The paper introduces the Scaled Dot-Product Attention and Multi-Head Attention. The Transformer model utilizes multi-head attention in different ways, including encoder-decoder attention and self-attention layers in both the encoder and decoder. The model also incorporates Position-wise Feed-Forward Networks, which consist of two linear transformations with a ReLU activation.
+
+To train their models, the authors used training data consisting of millions of sentence pairs from the WMT 2014 dataset. They employed byte-pair encoding to encode the sentences and batched them based on approximate sequence length. The models were trained on a single machine with multiple GPUs using the Adam optimizer. The authors applied regularization techniques such as Residual Dropout and label smoothing during training.
+
+The results of using the Transformer model for machine translation tasks were impressive. The big transformer model achieved a BLEU score of 28.4 on the English-to-German translation task and a BLEU score of 41.0 on the English-to-French translation task, establishing new state-of-the-art results. The paper also explored different variations of the Transformer model and compared its performance to previously reported models.
+
+In conclusion, the Transformer model based on attention outperforms architectures based on recurrent or convolutional layers in terms of training speed for translation tasks. The authors express excitement about the future of attention-based models and their plans to apply them to other tasks. They also mention their intention to extend the Transformer to handle input and output modalities other than text.
+
+Overall, this paper presents a groundbreaking network architecture that revolutionizes the field of sequence transduction. The Transformer model showcases the power of attention mechanisms and their ability to improve computational efficiency and performance in various natural language processing tasks.          </p>
+          <button class="btn btn-primary" onclick="downloadText()"> Download Text</button>
+        </div>
+        <div class="audio-controls">
+          <h4>Audio</h4>
+          <audio controls>
+            <source src="mp3/1711367826893.mp3" type="audio/mp3">
+            Your browser does not support the audio element.
+          </audio>
+          <button class="btn btn-secondary" onclick="downloadAudio()"> Download Audio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    var converter = new showdown.Converter(),
+        text = ` Welcome to our discussion. Today we will introduce a paper titled "Attention Is All You Need" by Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin.
+
+The paper presents a new network architecture called the Transformer, which relies solely on attention mechanisms and eliminates the need for recurrent or convolutional neural networks. The authors conducted experiments on machine translation tasks and demonstrated that the Transformer outperforms existing models in terms of quality, parallelizability, and training time. The model achieved a BLEU score of 28.4 on the WMT 2014 English-to-German translation task and established a new state-of-the-art BLEU score of 41.8 on the English-to-French translation task. Additionally, the authors successfully applied the Transformer to English constituency parsing.
+
+The paper builds upon existing literature in the field of reducing sequential computation by introducing the Transformer model. Previous models used convolutional neural networks but had limitations in learning dependencies between distant positions. In contrast, the Transformer model relies entirely on self-attention to compute representations of its input and output without using sequence-aligned RNNs or convolution. This innovative approach reduces sequential computation while maintaining the ability to learn dependencies between distant positions.
+
+The Transformer model utilizes an encoder-decoder structure for sequence transduction tasks. The encoder maps input symbol representations to continuous representations, while the decoder generates an output sequence of symbols based on these continuous representations. The model is auto-regressive and uses previously generated symbols as input for generating the next symbol. Both the encoder and decoder consist of six identical layers with residual connections and layer normalization. Each layer incorporates a multi-head self-attention mechanism and a fully connected feed-forward network.
+
+The attention mechanism in the Transformer model maps a query and a set of key-value pairs to an output, computed as a weighted sum of the values. The paper introduces the Scaled Dot-Product Attention and Multi-Head Attention. The Transformer model utilizes multi-head attention in different ways, including encoder-decoder attention and self-attention layers in both the encoder and decoder. The model also incorporates Position-wise Feed-Forward Networks, which consist of two linear transformations with a ReLU activation.
+
+To train their models, the authors used training data consisting of millions of sentence pairs from the WMT 2014 dataset. They employed byte-pair encoding to encode the sentences and batched them based on approximate sequence length. The models were trained on a single machine with multiple GPUs using the Adam optimizer. The authors applied regularization techniques such as Residual Dropout and label smoothing during training.
+
+The results of using the Transformer model for machine translation tasks were impressive. The big transformer model achieved a BLEU score of 28.4 on the English-to-German translation task and a BLEU score of 41.0 on the English-to-French translation task, establishing new state-of-the-art results. The paper also explored different variations of the Transformer model and compared its performance to previously reported models.
+
+In conclusion, the Transformer model based on attention outperforms architectures based on recurrent or convolutional layers in terms of training speed for translation tasks. The authors express excitement about the future of attention-based models and their plans to apply them to other tasks. They also mention their intention to extend the Transformer to handle input and output modalities other than text.
+
+Overall, this paper presents a groundbreaking network architecture that revolutionizes the field of sequence transduction. The Transformer model showcases the power of attention mechanisms and their ability to improve computational efficiency and performance in various natural language processing tasks.`,
+        html = converter.makeHtml(text);
+
+    document.getElementById('text-content').innerHTML = html;
+
+    function downloadText() {
+        var text = document.getElementById('text-content').innerText;
+        var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        var link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'text.txt';
+        link.click();
+    }
+
+    function downloadAudio() {
+      var link = document.createElement('a');
+      link.href = 'mp3/1711367826893.mp3';
+      link.download = 'audio.mp3';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>

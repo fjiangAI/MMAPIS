@@ -14,19 +14,22 @@ class BroadcastTTSGenerator():
                  app_secret:str=None,
                  model_config:dict={},
                  proxy:dict = None,
+                 prompt_ratio:float = 0.8,
                  **kwargs
                  ):
         self.broadcast_generator = Broadcast_Generator(api_key=llm_api_key,
-                                                        base_url=llm_base_url,
-                                                        model_config=model_config,
-                                                        proxy=proxy,
-                                                        **kwargs)
+                                                       base_url=llm_base_url,
+                                                       model_config=model_config,
+                                                       proxy=proxy,
+                                                       prompt_ratio=prompt_ratio,
+                                                       **kwargs)
 
         self.tts_converter = YouDaoTTSConverter(base_url=tts_base_url,
                                                 api_key=tts_api_key,
                                                 app_secret=app_secret,
                                                 proxy=proxy,
                                                 )
+        print("self.tts_converter:",self.tts_converter.__dict__)
 
 
     def broadcast_script_generation(self,
@@ -64,20 +67,6 @@ class BroadcastTTSGenerator():
                                  final_marker:str = "New Broadcast Content",
                                  return_bytes:bool = False,
                                  **kwargs):
-        # flag,content = self.broadcast_generator.broadcast_generation(document_level_summary=document_level_summary,
-        #                                                             section_summaries=section_summaries,
-        #                                                             broadcast_prompts=broadcast_prompts,
-        #                                                             reset_messages=reset_messages,
-        #                                                             response_only=response_only,
-        #                                                             raw_marker=raw_marker,
-        #                                                             final_marker=final_marker,
-        #                                                             **kwargs)
-        # if all([self.tts_converter.base_url,self.tts_converter.api_key,self.tts_converter.app_secret]):
-        #     flag, bytes_content = self.tts_converter.convert_texts_to_speech(content,return_bytes=return_bytes)
-        # else:
-        #     bytes_content = None
-        #     flag = True
-        # return flag,content, bytes_content
         script_flag,content = self.broadcast_script_generation(document_level_summary=document_level_summary,
                                                         section_summaries=section_summaries,
                                                         broadcast_prompts=broadcast_prompts,
@@ -91,7 +80,10 @@ class BroadcastTTSGenerator():
 
 
     def play_sound(self, bytes_content:bytes):
-        self.tts_converter.playsound(bytes_content)
+        self.tts_converter.play_sound(bytes_content)
+
+    def save(self, bytes_content:bytes, save_dir:str):
+        return self.tts_converter.save(bytes_content,save_dir=save_dir)
 
 
 if __name__ == "__main__":

@@ -12,11 +12,13 @@ class Broadcast_Generator(GPT_Helper):
                  base_url,
                  model_config:dict={},
                  proxy:dict = None,
+                 prompt_ratio:float = 0.8,
                  **kwargs):
         super().__init__(api_key=api_key,
                          base_url=base_url,
                          model_config=model_config,
                          proxy=proxy,
+                         prompt_ratio=prompt_ratio,
                          **kwargs)
 
     def broadcast_generation(self,

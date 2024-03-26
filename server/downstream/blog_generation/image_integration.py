@@ -5,6 +5,7 @@ from MMAPIS.server.preprocessing import img_txt_alignment
 from MMAPIS.config.config import GENERAL_CONFIG,APPLICATION_PROMPTS, ALIGNMENT_CONFIG,OPENAI_CONFIG
 from typing import Union, List
 from pathlib import Path
+import reprlib
 
 class Blog_Generator():
     def __init__(self,
@@ -12,11 +13,13 @@ class Blog_Generator():
                  base_url,
                  model_config: dict = {},
                  proxy: dict = None,
-                    **kwargs):
+                 prompt_ratio: float = 0.8,
+                 **kwargs):
         self.blog_script_generator = Blog_Script_Generator(api_key=api_key,
                                                            base_url=base_url,
                                                            model_config=model_config,
                                                            proxy=proxy,
+                                                           prompt_ratio=prompt_ratio,
                                                            **kwargs)
 
     def blog_generation(self,
@@ -45,6 +48,7 @@ class Blog_Generator():
                                                                             raw_marker=raw_marker,
                                                                             final_marker=final_marker,
                                                                             **kwargs)
+        content = "# Blog Content\n" + content
         path = img_txt_alignment(text=content,
                                 pdf=pdf,
                                 raw_md_text=raw_md_text,
@@ -56,6 +60,15 @@ class Blog_Generator():
                                 img_width=img_width,
                                  temp_file= temp_file)
         return flag, path
+
+    def __repr__(self):
+        """
+        print the basic info of OpenAI_Summarizer
+        :return: str
+        """
+
+        msg = f"Blog_GPT(api_key:{reprlib.repr(self.blog_script_generator.api_key)},base_url:{self.blog_script_generator.base_url},model:{self.blog_script_generator.model}, temperature:{self.blog_script_generator.temperature}, max_tokens:{self.blog_script_generator.max_tokens}, top_p:{self.blog_script_generator.top_p}, frequency_penalty:{self.blog_script_generator.frequency_penalty}, presence_penalty:{self.blog_script_generator.presence_penalty})"
+        return msg
 
 if __name__ == "__main__":
     api_key = OPENAI_CONFIG['api_key']

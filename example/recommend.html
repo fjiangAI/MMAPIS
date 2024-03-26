@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendation Scores and Reasons Display</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .score-card {
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-in-out;
+        }
+
+        .score-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .score-badge {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h2 class="mb-4 text-center">Recommendation Scores and Reasons Overview</h2>
+        <div>
+            <canvas id="chart"></canvas> <!-- Add canvas element for radar chart -->
+        </div>
+        <div class="row">
+            <!--{{scores}}-->
+        </div>
+    </div>
+
+
+    <script id="score-card-template" type="text/html">
+        <div class="col-md-6 mb-4">
+            <div class="card score-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{title}}</h5>
+                    <p class="card-text">{{comments}}</p>
+                    <span class="score-badge float-end" style="background-color: {{badgeColor}};">{{score}}</span>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.1.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const scoreData = [{'title': 'Clarity of Objectives and Central Theme', 'score': 9, 'comments': 'The objectives and central theme of the paper, focusing on introducing the Transformer model based on attention mechanisms and its advantages over recurrent or convolutional networks, are clearly articulated with detailed explanations. The paper aims to demonstrate the superior quality, parallelizability, and training efficiency of the Transformer through experiments on machine translation tasks.'}, {'title': 'Appropriateness and Accuracy of Methods', 'score': 8, 'comments': 'The methods employed in the paper, particularly the introduction of the Transformer architecture based solely on attention mechanisms, are well-suited to the research question of improving sequence transduction models. The accuracy of the methods is demonstrated through experimental results showing superior performance in quality, parallelizability, and training time. However, further justification could enhance the clarity of methodological choices.'}, {'title': 'Authenticity and Accuracy of Data and Findings', 'score': 10, 'comments': 'The data and findings presented in the paper are highly credible, supported by experimental results on machine translation tasks that establish new state-of-the-art performance metrics. The meticulous verification processes and detailed analysis contribute to the authenticity and accuracy of the presented data and findings.'}, {'title': 'Depth of Analysis and Conclusiveness', 'score': 8, 'comments': 'The analysis in the paper is thorough, particularly in discussing the model architecture, attention mechanisms, and experimental results. However, there are uncertainties in terms of specific quantitative measurements or results provided, which could enhance the conclusiveness of the findings. Further exploration or detailed quantitative analysis could strengthen the depth of analysis.'}, {'title': 'Overall Writing Quality', 'score': 8, 'comments': 'The writing in the paper is clear, concise, well-organized, and easy to follow. The content is presented in a structured manner, with detailed explanations of the Transformer model architecture and its advantages over existing models. Improvements in clarity and engagement could further elevate the overall writing quality.'}, {'title': 'Overall Score', 'score': 9, 'comments': ''}];
+        const scoreContainer = document.querySelector('.row');
+        const scoreCardTemplate = document.getElementById('score-card-template').innerHTML;
+
+        for (const item of scoreData) {
+            const title = item.title;
+            const comments = item.comments;
+            const score = item.score;
+            const badgeColor = getBadgeColor(score);
+
+            const cardHTML = scoreCardTemplate
+                .replace('{{title}}', title)
+                .replace('{{comments}}', comments)
+                .replace('{{score}}', score)
+                .replace('{{badgeColor}}', badgeColor);
+
+            scoreContainer.insertAdjacentHTML('beforeend', cardHTML);
+        }
+
+        function getBadgeColor(score) {
+            if (score >= 9) {
+                return '#198754'; // Green
+            } else if (score >= 7) {
+                return '#0d6efd'; // Blue
+            } else {
+                return '#dc3545'; // Red
+            }
+        }
+
+    // get the canvas element
+    const ctx = document.getElementById('chart').getContext('2d');
+
+    // define the point style
+    const pointStyle = (ctx) => {
+      return ctx.dataset.index % 2 === 0 ? 'circle' : 'rect';
+    }
+    let labels = scoreData.map(function(item) {
+        return item.title;
+    });
+    let data = scoreData.map(function(item) {
+        return item.score;
+    });
+            // create the radar chart
+        new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'recommendation score of the paper',
+              data: data,
+              borderColor: 'green',
+              backgroundColor: 'rgba(0,255,0,0.2)',
+            }, {
+              label: 'average score of socred papers',
+              data: [8.75, 7.88, 10.0, 7.38, 8.12, 7.97],
+              borderColor: 'red',
+              backgroundColor: 'rgba(255,0,0,0.2)',
+            }],
+          },
+          options: {
+            scales: {
+              r: {
+                display: true,
+                min: 0,
+                max: 10,
+              },
+            },
+          },
+        });
+    </script>
+</body>
+</html>

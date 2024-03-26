@@ -10,11 +10,13 @@ class Blog_Script_Generator(GPT_Helper):
                  base_url,
                  model_config:dict={},
                  proxy:dict = None,
+                 prompt_ratio:float = 0.8,
                  **kwargs):
         super().__init__(api_key=api_key,
                          base_url=base_url,
                          model_config=model_config,
                          proxy=proxy,
+                         prompt_ratio=prompt_ratio,
                          **kwargs)
 
     def blog_script_generation(self,
@@ -54,15 +56,17 @@ if __name__ == "__main__":
     base_url = CONFIG["openai"]["base_url"]
     model_config = CONFIG["openai"]["model_config"]
     blog_prompts = APPLICATION_PROMPTS["blog_prompts"]
-    user_input_path = "../integrate.md"
+    user_input_path = "../data/pdf_content1.md"
     with open(user_input_path, 'r') as f:
         user_input = f.read()
-    section_summaries_path = "../summary.md"
+    section_summaries_path = "../data/pdf_content1.txt"
     with open(section_summaries_path, 'r') as f:
         section_summaries = f.read()
+
     blog_generator = Blog_Script_Generator(api_key=api_key,
                                     base_url=base_url,
                                     model_config=model_config)
+    print(blog_generator)
     flag,response = blog_generator.blog_script_generation(
                                     document_level_summary=user_input,
                                     section_summaries=section_summaries,
