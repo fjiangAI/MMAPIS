@@ -358,7 +358,7 @@ class Article():
                     return False
             return True
 
-        nlp = spacy.load("en_core_web_sm")
+        nlp = spacy.load("en_core_web_lg")
         # input text is filtered by regular expression, so it format is fixed
         if isinstance(NER, str):
             pure_text = [re.search(pure_name_pattern, i).group(1) for i in text]

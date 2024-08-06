@@ -127,10 +127,13 @@ def img_txt_alignment(
         raw_md_text:str = None,
         init_grid:int = 3,
         max_grid:int = 4,
-        img_width:int = 600,
+        img_width:int = 400,
+        margin:int = 20,
         threshold:float = 0.9,
         temp_file:bool = False,
-):
+)->Path:
+    text = text.strip()
+    raw_md_text = raw_md_text.strip() if raw_md_text else None
     if isinstance(pdf,str):
         pdf = Path(pdf)
     elif isinstance(pdf,UploadFile):
@@ -183,6 +186,7 @@ def img_txt_alignment(
                                              nlp(section_name).similarity(nlp(img_parent_name))])
                     similarities.append(temp_similarities)
                 else:
+                    ## If the parent name is not found, then the img paths will be added to the fail match img paths(due to no matching section in raw_md_text)
                     fail_match_img_paths += [path for path in section_img_paths.img_path]
                     flag = True
                     break
@@ -234,10 +238,10 @@ def img_txt_alignment(
                 fail_match_img_paths += [path for path in section_img_paths.img_path]
         extra_info = res_article.extra_info
 
-
-    res = extra_info + '\n' + img_ls_to_md(fail_match_img_paths,img_width=img_width) + '\n\n' + '\n'.join(
-        ['#' * section.rank + ' ' + strip_title(section.title) + '\n' + img_ls_to_md(section.img_paths,img_width=img_width)
-         + '\n' + section.text for section in res_article.sections])
+    print("extra_info: ",extra_info)
+    res = extra_info + '\n' + img_ls_to_md(fail_match_img_paths,img_width=img_width,margin=margin) + '\n\n' + '\n'.join(
+        ['#' * section.rank + ' ' + strip_title(section.title) + '\n' + img_ls_to_md(section.img_paths,img_width=img_width,margin=margin)
+         + '\n' + section.text for section in res_article.sections ])
 
     if file_name:
         file_path = Path(save_dir) / f'{file_name}.md'
@@ -257,8 +261,8 @@ def img_txt_alignment(
 
 
 def img_ls_to_md(img_ls:Union[List[str],str],
-                 img_width:int = 600,
-                 magin:int = 10
+                 img_width:int = 400,
+                 margin:int = 20
                  )->str:
     if isinstance(img_ls,str):
         img_ls = [img_ls]
@@ -270,11 +274,10 @@ def img_ls_to_md(img_ls:Union[List[str],str],
     #     prefix = '<div style="display: flex; justify-content:flex-start; overflow-x: auto;align-items: flex-start; padding: 5px 5px;">'
 
     prefix = f'<div style="display: flex; overflow-x: scroll; align-items: center; padding: 5px; height: {img_width}px;">'
-    img_prefix = f'<div style="flex: 0 0 auto; margin-right: {magin}px; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center;">'
+    img_prefix = f'<div style="flex: 0 0 auto;  height: 100%; background: #fff; display: flex; justify-content: center; align-items: center;">'
     suffix = "</div>"
-    img_md = '\n'.join([f'<img src="{img}" style="height: 100%; object-fit: scale-down;" />' for img in img_ls])
+    img_md = '\n'.join([f'<img src="{img}" style="height: 100%; object-fit: scale-down;margin-right: {margin}px;" />' for img in img_ls])
     return prefix + "\n" + img_prefix + "\n" + img_md + "\n" + suffix + "\n" + "</div>"
-
 
 
 

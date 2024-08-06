@@ -8,8 +8,10 @@ general:
     "User-Agent": "xxx" # TODO: set your user-agent
   save_dir: "./res"
   app_save_dir: "./app_res"
-  backend_url: "http://127.0.0.1:8000"
   allowed_file_types: [".html",".css",".js",".png",".jpg",".jpeg",".pdf",".md"]
+  backend_url: "http://127.0.0.1:8000"     # TODO: set your backend url
+  middleware_url: "http://127.0.0.1:8005"  # TODO: set your middleware url
+  frontend_url: "http://127.0.0.1:8001"    # TODO: set your frontend url
 
 arxiv:
   key_word: null # keyword can be str or list of str, and can be url itself. If search daily submission, set null
@@ -27,12 +29,18 @@ openai:
   num_processes: 6
   prompt_ratio: 0.8 # prompt_len / max_tokns, 0.8 means up to 80% of max tokens can be prompt
   model_config:
-    model: "gpt-3.5-turbo-16k-0613"
-    temperature: 0.5
+    model: "gpt-4o-mini"  # the model name of summarization
+    temperature: 1.0
     max_tokens: 16385
     top_p: 1.0
     frequency_penalty: 0.1
     presence_penalty: 0.2
+  compression_ratio: 0.4  # the ratio of the document-level summary length to the section-level summary length
+  min_length: 700   # the minimum length of the generated document-level summary
+  recommendation_model: "gpt-3.5-turbo-1106"
+  max_regenerate: 3
+  user_intent_model: "gpt-3.5-turbo-1106"
+  img_qa_model: "gpt-4o"
 
 nougat:
   check_point : "./tools/nougat/pretrained_w"
@@ -44,12 +52,15 @@ tts:
   base_url: "xxx" # TODO: set your tts base url
   api_key: 'xxx' # TODO: set your tts api key
   app_secret: "xxx" # TODO: set your app secret
+  model: "youdao"
 
 alignment:
   init_grid: 3  # The grid level for aligning pictures with subtitles. For example, setting it to 3 means the picture can be aligned with a 3-level subtitle (e.g., ### subtitle). Setting init_grid to 2 means it can be aligned with a 2-level subtitle (e.g., ## subtitle).
   max_grid: 4  # The maximum grid level for section splitting. For instance, setting it to 4 means the article structure can be split into 4-level subtitles (e.g., #### subtitle).
-  threshold: 0.9
-  img_width: 600
+  threshold: 0.9 # The threshold for the similarity between the subtitle and the picture. If the similarity is greater than the threshold, the picture will be aligned with the subtitle.
+  img_width: 300 # The width of the aligned picture.
+  margin: 10 # The margin between the pictures.
+
 
 
 

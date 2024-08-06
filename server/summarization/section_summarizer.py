@@ -100,6 +100,8 @@ class Section_Summarizer(GPT_Helper):
         Returns:
 
         """
+        print("len(article_texts): ",len(article_texts),"system_messages: ",system_messages)
+
         flag = False
         with Pool(processes=self.num_processes) as pool:
             chat_func = partial(self.summarize_text,
@@ -114,7 +116,7 @@ class Section_Summarizer(GPT_Helper):
                 ignore_idx = [False] * len(article_texts)
 
             article_texts = tqdm(article_texts,position=0,leave=True)
-            article_texts.set_description(f"[Section Summary] Total {len(article_texts)} section | num_processes:{self.num_processes} | requests_per_minute:{self.rpm_limit}")
+            article_texts.set_description(f"[Section Summary] Total {len(article_texts)} section|num_processes:{self.num_processes}|model:{self.model}|max_tokens:{self.max_tokens}|requests_per_minute:{self.rpm_limit}")
             try:
                 results = [
                     pool.apply_async(chat_func,kwds={'system_messages':system_messages[i] if flag else system_messages,
@@ -158,7 +160,6 @@ class Section_Summarizer(GPT_Helper):
         Returns: list of results
 
         """
-
 
         article_texts = [article_texts] if isinstance(article_texts,str) else article_texts
         flag = False
@@ -208,9 +209,6 @@ class Section_Summarizer(GPT_Helper):
                 if not result[0]:
                     logging.error(f"Failed to summarize section {i} with error {result[1]}")
                     return success,result[1]
-
-
-
 
 
 

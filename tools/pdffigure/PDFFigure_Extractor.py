@@ -9,6 +9,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from MMAPIS.tools.pdffigure.pdf_extract import get_objpixmap
 from typing import Dict, List, Union
+from datetime import datetime
 
 class SectionFigures():
     def __init__(self,
@@ -143,6 +144,7 @@ class PDFFigureExtractor:
         else:
             logging.error(f"parser error: no img found in {self.pdf_path}")
             return {}
+
 
 
 

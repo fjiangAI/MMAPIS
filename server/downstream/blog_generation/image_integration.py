@@ -48,7 +48,8 @@ class Blog_Generator():
                                                                             raw_marker=raw_marker,
                                                                             final_marker=final_marker,
                                                                             **kwargs)
-        content = "# Blog Content\n" + content
+        if not flag:
+            return flag, content
         path = img_txt_alignment(text=content,
                                 pdf=pdf,
                                 raw_md_text=raw_md_text,
@@ -58,7 +59,7 @@ class Blog_Generator():
                                 init_grid=init_grid,
                                 max_grid=max_grid,
                                 img_width=img_width,
-                                 temp_file= temp_file)
+                                temp_file= temp_file)
         return flag, path
 
     def __repr__(self):

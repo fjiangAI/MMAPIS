@@ -1,6 +1,7 @@
 import os
+import sys
 from MMAPIS.config.config import NOUGAT_CONFIG, GENERAL_CONFIG
-from MMAPIS.tools.utils import get_batch_size
+from MMAPIS.tools.utils import get_batch_size,torch_gc
 import urllib.error
 from pathlib import Path
 import logging
@@ -16,6 +17,14 @@ import torch
 from typing import List,Union,Dict,Tuple
 import reprlib
 from datetime import datetime
+from torch import profiler
+from subprocess import Popen, PIPE
+
+
+from MMAPIS.tools import ArxivCrawler
+
+
+
 class NougatArticle:
     def __init__(self,
                  file_name: str,
@@ -105,7 +114,7 @@ class NougatPredictor:
                 )
                 logging.info(f"Loaded {str(pdf) if not isinstance(pdf,bytes) else pdf_name},length: {len(dataset)}")
             # if pdf is corrupted, skip
-            except fitz.fitz.FileDataError:
+            except fitz.FileDataError:
                 logging.info(f"Could not load file in path {str(pdf)}.")
                 continue
             except urllib.error.URLError:
@@ -184,7 +193,7 @@ class NougatPredictor:
                     predictions = []
                     page_num = 0
                     file_index += 1
-
+        torch_gc()
         return files
     @staticmethod
     def format_transformer(text: str) -> str:

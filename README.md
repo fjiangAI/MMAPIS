@@ -2,6 +2,10 @@
 
 # ✨ Latest News
 
+- \[08/06/2024]\: **A new version has been released with the following updates**:
+     - **Middle-End Services Added:** This version introduces middle-end services, allowing the file system, API service, and front-end system to operate independently.
+     - **Optimized Interactive Experience:** Enhancements have been made to improve the user interaction across all applications.
+
 - [03/26/2024]: Launch of Interactive Functionality in Streamlit.
 
 - [03/26/2024]: Deployment of Multimodal Question Answering (QA) Generation System.
@@ -17,7 +21,9 @@
 
 - [x] Open the API of each part in the whole workflow to convenient user 
 - [x] Optimize the User Intereface(UI) to better improve user's interactive experience
-- [ ] Speed up code
+- [ ] Improve the Multimodal QA experience
+- [ ] Add a Chinese language version
+- [ ] Increase code execution speed
 
 
 
@@ -70,9 +76,9 @@ Please refer to [tech report](https://arxiv.org/abs/2401.09150) for more analysi
 # 📋Project Framework
 ```
 MMAPIS/
-├── main.py			     # Main workflow
-├── backend.py                # Initiates the backend services and manages the     
-│       						APIs for each segment
+├── main.py			     # Main workflow and application entry point
+├── backend.py                # Manages backend services and orchestrates APIs for different stages
+├── middleware.py             # Provides middleware services for handling file data (e.g., PDF, images)
 ├── res/                      # Output file dir of backend
 │
 ├── app_res/                  # Output file dir of frontend
@@ -140,82 +146,102 @@ MMAPIS/
 
 1. Install the require python libraries
 
-   ```
-   pip install -r requirements.txt
+   ```bash
+   $ chmod +x install.sh
+   $ ./install.sh
    ```
 
 2. Use [pdffigures2](https://github.com/allenai/pdffigures2) to extract figures and tables from scientific papers you need to configure the java environment.
 
-   ```
-   git clone https://github.com/allenai/pdffigures2.git
-   cd pdffigures2
-   export JAVA_HOME="your/path/to/java"
+   ```bash
+   $ export JAVA_HOME="your/path/to/java"
    ```
 
 3. For spacy to calculate similarity of title-like keyword, you need to download `en_core_web_lg` with the following script:
 
-   ```
-   python -m spacy download en_core_web_lg
+   ```bash
+   $ python -m spacy download en_core_web_lg
    ```
 
 4. For Nougat, you need to download the  [Released pretrained weight](https://github.com/facebookresearch/nougat/releases) to the checkpoint path.
 
 5. Make sure to setup your parameters in [config.yaml](config/config.yaml)
 
-6. You can run the whole process by executing [main.py](main.py). The features are: 
-
-   - Raw Markdown File of the PDF with plain text
-   - Align figures with corresponding section in the Markdown file(multimodal)
-   - Section-level summary markdown file with mulimodal 
-   - Document-level summary markdown file with multimodal(based on the Section-level summary, but more focus on fluency and coherence)
-   - Downstream Applications:
-     - Recommendation Score
-     - Broadcast style generation 
-     - Blog style generation
-     - Multimodal QA(Not open yet)
-
-   ```
-   cd path/to/MMAPIS
-   python main.py
-   ```
-
-   If you process xxx.pdf, you will get output structure diagram:
-
-   ```
-   MMAPIS/
-   ├── res/                       # Output file dir
-   │   ├── xxx/                	 # File name as dirname
-   │   │   ├── img/		      # Save dir of markdown image 
-   │   │   ├── xxx.md             # Raw output markdown file of xxx.pdf with 	                                                                                   
-   │   │						 plian text
-   │   │   ├── xxx_raw_aligned.md # Aligned raw markdown file
-   │   │   ├── broadcast.mp3      # the mp3 output of broadcast style generation 
-   │   │   ├── broadcast.md       # the text of broadcast style generation 
-   │   │   ├── xxx_section_summarized.md  # Section-level summary markdown file
-   │   │   ├── xxx_document_summarized.md # Document-level summary markdown file
-   │   │   └── xxx_blog.md        # Blog style generation
-   ```
+6. <details>
+     <summary><strong>Run the Entire Process End-to-End (Click to Expand)</strong></summary>
+     <p>You can run the whole process by executing <a href="main.py">main.py</a>.</p>
+     <p>The features are:</p>
+     <ul>
+       <li>Raw Markdown File of the PDF with plain text</li>
+       <li>Align figures with corresponding section in the Markdown file (multimodal)</li>
+       <li>Section-level summary markdown file with multimodal</li>
+       <li>Document-level summary markdown file with multimodal (based on the Section-level summary, but more focused on fluency and coherence)</li>
+       <li>Downstream Applications:
+         <ul>
+           <li>Recommendation Score</li>
+           <li>Broadcast style generation</li>
+           <li>Blog style generation</li>
+           <li>Multimodal QA</li>
+         </ul>
+       </li>
+     </ul>
+     <p>To execute, run:</p>
+     <pre><code>
+     cd path/to/MMAPIS
+     python main.py
+     </code></pre>
+     <p>If you process <code>xxx.pdf</code>, you will get the following output structure:</p>
+     <pre><code>
+     MMAPIS/
+     ├── res/                       # Output file dir
+     │   ├── xxx/                   # File name as dirname
+     │   │   ├── img/               # Save dir of markdown image 
+     │   │   ├── xxx.md             # Raw output markdown file of xxx.pdf with plain text
+     │   │   ├── xxx_raw_aligned.md # Aligned raw markdown file
+     │   │   ├── broadcast.mp3      # The mp3 output of broadcast style generation 
+     │   │   ├── broadcast.md       # The text of broadcast style generation 
+     │   │   ├── xxx_section_summarized.md  # Section-level summary markdown file
+     │   │   ├── xxx_document_summarized.md # Document-level summary markdown file
+     │   │   └── xxx_blog.md        # Blog style generation
+     </code></pre>
+   </details>
 
 7. To operationalize the frontend and backend components, initiate your server and client by executing the following procedures:
 
-	- For the backend:
+     - For the backend:
 
-	  ```bash
-	  $ cd path/to/MMAPIS
-	  $ uvicorn backend:app --reload --port <your port> --host <your host>
-	  ```
+       ```bash
+       $ cd path/to/MMAPIS
+       $ uvicorn backend:app --reload --port <your port> --host <your host>
+       ```
 
-	- For the frontend:
+       If you encounter an `ImportError` stating "No module named MMAPIS", you may need to add the root directory to the `PYTHONPATH` in each terminal session. To do this, run the following command:
 
-	  ```bash
-	  $ cd path/to/MMAPIS
-	  $ cd client
-	  $ streamlit run app.py --port <your port>
-	  ```
-	  
-	  It is important to note that when employing the Multimodal Question Answering (QA) Generation functionality, it is advisable to consult the `Multimodal QA Generation` section within [api_usage.ipynb](client/api_usage.ipynb) to optimize your usage.
+       ```bash
+       $ export $PYTHONPATH=..
+       ```
 
+       This command ensures that Python can locate the `MMAPIS` module by including the parent directory in its search path.
 
+     - For middleware, you can start your file server in the following way:
+
+       ```bash
+       $ uvicorn middleware:app --reload --port <your port> --host <your host>
+       ```
+       
+     - For the frontend:
+
+       ```bash
+       $ cd path/to/MMAPIS
+       $ cd client
+       $ streamlit run app.py --port <your port>
+       ```
+       
+       It is important to note that when employing the Multimodal Question Answering (QA) Generation functionality, it is advisable to consult the `Multimodal QA Generation` section within [api_usage.ipynb](client/api_usage.ipynb) to optimize your usage.
+       
+       **NOTE**: Don't forget to update your [config.yaml](config/config.yaml) file with the correct URLs for each server, ensuring that the client, middleware, and backend can communicate with each other.
+       
+       
 
 # Acknowledgement
 
@@ -225,7 +251,7 @@ MMAPIS/
 
 # 📩 Contact
 
-If you have any questions, please feel free to [contact](https://fjiangai.github.io) me. 
+If you have any questions, please feel free to [contact me](https://fjiangai.github.io) . 
 
 
 
@@ -242,3 +268,10 @@ If you have any questions, please feel free to [contact](https://fjiangai.github
 }
 ```
 We are from the School of Data Science, the Chinese University of Hong Kong, Shenzhen (CUHKSZ), and the Shenzhen Research Institute of Big Data (SRIBD). we welcome aspiring individuals to join our group and contribute to the new era of LLM.
+
+
+
+
+
+
+

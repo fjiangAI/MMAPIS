@@ -10,6 +10,7 @@ import requests
 import spacy
 import re
 import os
+from typing import Iterable
 
 class MultiModal_QA_Generator():
     def __init__(self, api_key, base_url, model_config: dict = {}, proxy: dict = None,prompt_ratio = 0.8, **kwargs):
@@ -30,7 +31,7 @@ class MultiModal_QA_Generator():
                       response_only: bool = True,
                       session_message: List[str] = None,
                       detailed_img:bool = False,
-                      img_width:int = 400,
+                      img_width:int = 200,
                       margin:int = 10
                       ):
         if not isinstance(user_intent, Dict):
@@ -38,10 +39,12 @@ class MultiModal_QA_Generator():
         div_pattern = re.compile(r"(<div.*?>.*?</div>\n+</div>)", re.DOTALL)
         system_prompt =  [{"role": "system", "content": prompts.get('text_system', None)},{"role": "system", "content": f"`Context: {re.sub(div_pattern,'',document_level_summary)}`"}]
         if session_message:
+            ## if not start with system message, add system message
             if session_message[0]['role'] != 'system':
                 session_message = system_prompt + session_message
             self.clear_session(session_message)
         else:
+            ## if session message is None, add system message(the first round)
             session_message = system_prompt
         user_type = user_intent.get('type', None)
         index = user_intent.get('index', None)
@@ -61,6 +64,7 @@ class MultiModal_QA_Generator():
                 target_title = []
                 for i in index:
                     target_title.append(sections[i].title)
+            ## General text query
             elif index is None:
                 flag, answer = self.general_qa_generator.summarize_text(
                     text=user_input,
@@ -68,14 +72,16 @@ class MultiModal_QA_Generator():
                     response_only=response_only
                 )
                 if flag:
-                    answer = "- Context: No specific chapter detected, answer with general context:\n"+answer
+                    # answer = "- Context: No specific chapter detected, answer with general context:\n"+answer
+                    answer = answer
                 return flag, answer
             else:
-                flag, answer = False, f"user intent parse error in text query, expect int(for specific chapter) or list(for multiple chapters), but got {type(index)}"
+                flag, answer = False, f"user intent parse error in text query, expect int(for specific chapter) or list(for multiple chapters), or None(for general query), but got {type(index)}"
                 return flag, answer
             if not isinstance(target_title, List):
                 target_title = [target_title]
             context = []
+            ## if original article is None, use document level summary as article
             if article is None:
                 article = document_level_summary
             else:
@@ -87,15 +93,15 @@ class MultiModal_QA_Generator():
                 else:
                     context.append(target_section.title_text)
             context = "\n".join(context)
-            system_prompt = prompts.get('text_system', None)
             user_input = prompts.get('text_input', None).replace('{context}', context).replace('{user query}', user_input)
             flag, answer = self.text_qa_generator.summarize_text(
                 text=user_input,
-                system_messages=system_prompt,
-                response_only=response_only
+                response_only=response_only,
+                session_messages = session_message
             )
             if flag:
-                answer = f"- Context:\n Chapter: {target_title}\n- Answer:\n{answer}"
+                # answer = f"- Context:\n Chapter: {target_title}\n- Answer:\n{answer}"
+                answer = answer
         elif user_type == 'img':
             if isinstance(index, int):
                 url_ls = self.find_img_url(document_level_summary)
@@ -106,7 +112,7 @@ class MultiModal_QA_Generator():
                 except:
                     flag, answer = False, f"img query index out of range, expect image index < {len(img_paths)}, but got {index}"
                     return flag, answer
-            elif isinstance(index, List):
+            elif isinstance(index, Iterable):
                 if isinstance(index[0], int):
                     target_section = sections[index[0]]
                     print("target_section: ", target_section.title)
@@ -118,7 +124,7 @@ class MultiModal_QA_Generator():
                     except:
                         flag, answer = False, f"img query index out of range, expect index < {len(img_paths)}, but got {index[1]}"
                         return flag, answer
-                elif isinstance(index[0], List):
+                elif isinstance(index[0], Iterable):
                     target_img = []
                     target_url = []
                     for i in index:
@@ -143,17 +149,24 @@ class MultiModal_QA_Generator():
                     response_only=response_only
                 )
                 if flag:
-                    answer = "- Context: No specific image index detected, answer with general context:\n"+answer
+                    # answer = "- Context: No specific image index detected, answer with general context:\n"+answer
+                    answer = answer
                 return flag, answer
             else:
                 flag, answer = False, f"user intent parse error in img query, expect index be int(for specific figure) or list(for figure in specific chapter), but got {type(index)}"
                 return flag, answer
             if not isinstance(target_img, List):
                 target_img = [target_img]
-            flag, answer = self.img_qa_generator.request_img_api(user_input=user_input, url_lst=target_img,detailed_img=detailed_img,response_only=True)
+            qa_system = "## Role:\n You are specialized in interpreting and providing detailed explanations based on academic paper images and their context. Your task is to answer user questions with high accuracy and clarity, ensuring that your responses are formatted in markdown."
+            qa_input = qa_system + "\n\n## user query:\n"+user_input
+            flag, answer = self.img_qa_generator.request_img_api(user_input=qa_input,
+                                                                 url_lst=target_img,
+                                                                 detailed_img=detailed_img,
+                                                                 response_only=True)
             if isinstance(target_url,str):
                 target_url = [target_url]
-            answer = "- Context:\n" + img_to_html(img_path_ls=target_url,img_height=img_width,margin=margin)+"\n- Answer:\n"+answer
+            # answer = "- Context:\n" + img_to_html(img_path_ls=target_url,img_height=img_width,margin=margin)+"\n- Answer:\n"+answer
+            answer = img_to_html(img_path_ls=target_url,img_height=img_width,margin=margin)+"\n\n- **Answer**:\n"+answer
         else:
             flag, answer = self.general_qa_generator.summarize_text(
                 text=user_input,
@@ -161,7 +174,8 @@ class MultiModal_QA_Generator():
                 response_only=response_only
             )
             if flag:
-                answer = "- Context: Detect as general query, answer with general context:\n- Answer:\n"+answer
+                # answer = "- Context: Detect as general query, answer with general context:\n- Answer:\n"+answer
+                answer = answer
             return flag, answer
         return flag, answer
 
@@ -199,8 +213,8 @@ class MultiModal_QA_Generator():
             margin=margin
         )
         # if flag:
+        answer = self.general_qa_generator.clean_math_text(answer)
         self.session_message.extend([{"role": "user", "content": user_input}, {"role": "assistant", "content": answer}])
-        print("Assistant: ", answer)
         print("session_message: ", self.session_message)
         return flag, answer
 
@@ -260,7 +274,7 @@ class MultiModal_QA_Generator():
     def find_target_section(self,
                             target_title:str,
                             article:Union[str,Article],
-                            init_grid:int = ALIGNMENT_CONFIG['init_grid'],
+                            init_grid:int = 2,
                             max_grid:int = ALIGNMENT_CONFIG['max_grid'],
                             ignore_titles = OPENAI_CONFIG['ignore_title']):
         print("target_title: ", target_title)
@@ -296,30 +310,17 @@ class MultiModal_QA_Generator():
                     max_index = (i,j)
         return max_index
 
-    # @staticmethod
-    # def find_img_path(text: str):
-    #     div_pattern = re.compile(r"(<div.*?>.*?</div>\n+</div>)", re.DOTALL)
-    #     img_pattern = re.compile(r"s?rc=\"(.*?)\"", re.DOTALL)
-    #     divs = div_pattern.findall(text)
-    #     img_paths = []
-    #     img_urls = []
-    #     for div in divs:
-    #         img_paths.extend(img_pattern.findall(div))
-    #     for i, img_path in enumerate(img_paths):
-    #         if img_path.startswith('http'):
-    #             img_urls.append(img_path)
-    #             img_paths[i] = os.path.join(GENERAL_CONFIG["app_save_dir"],img_path.split("index/")[1])
-    #     print("img_paths: ", img_paths)
-    #     return img_paths, img_urls
+
 
 
     @staticmethod
     def url_to_path(url_lst:List[str])->List[str]:
-        img_paths = []
-        for i, url in enumerate(url_lst):
-            img_paths.append(os.path.join(GENERAL_CONFIG["app_save_dir"],url.split("index/")[1]))
-        print("img_paths: ", img_paths)
-        return img_paths
+        # img_paths = []
+        # for i, url in enumerate(url_lst):
+        #     img_paths.append(os.path.join(GENERAL_CONFIG["app_save_dir"],url.split("index/")[1]))
+        # print("img_paths: ", img_paths)
+        # return img_paths
+        return url_lst
 
 
     @staticmethod

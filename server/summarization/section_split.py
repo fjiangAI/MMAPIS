@@ -48,7 +48,11 @@ def assgin_prompts(
 
     if 'general' in key:
         title_pattern = re.compile(r"#+\s*(.*)")
-        query_title = re.match(title_pattern,query_title).group(1)
+        query_title = re.match(title_pattern,query_title)
+        if query_title:
+            query_title = query_title.group(1)
+        else:
+            query_title = ""
         if replace:
             return query_title,summary_prompts[key].replace('[title_to_replace]',query_title)
         else:

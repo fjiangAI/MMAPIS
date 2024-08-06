@@ -38,7 +38,9 @@ class Blog_Script_Generator(GPT_Helper):
                                    reset_messages=reset_messages,
                                    response_only=response_only,
                                    **kwargs)
-        return flag,self.filter_final_response(content,raw_marker= raw_marker,final_marker=final_marker)
+        content = content if content.strip().startswith("# ") else "# Blog Script\n" + content
+        content = self.filter_final_response(content,raw_marker= raw_marker,final_marker=final_marker)
+        return flag,self.format_headers(self.clean_math_text(content))
 
 
     def __repr__(self):

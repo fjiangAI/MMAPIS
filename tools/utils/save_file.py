@@ -51,7 +51,6 @@ def download_pdf(pdf_url: Union[str,Path],
 
     """
     try:
-        response = requests.get(pdf_url)
         if pdf_name is None:
             pdf_name = pdf_url.split("/")[-1].replace('.', '_')
         save_dir = Path(save_dir) / Path(pdf_name).stem
@@ -64,13 +63,15 @@ def download_pdf(pdf_url: Union[str,Path],
         if pdf_path.exists():
             logging.info(f"pdf {pdf_path} already exists")
             return True, pdf_path
+        response = requests.get(pdf_url)
         with open(pdf_path, 'wb') as pdf_file:
             pdf_file.write(response.content)
         logging.info(f"download pdf from {pdf_url} to {pdf_path}")
         return True, pdf_path
     except Exception as e:
-        print(f"Error downloading PDF: {e}")
-        return False, None
+        error_msg = f"Donwload pdf from {pdf_url} error: {e}"
+        logging.error(error_msg)
+        return False, error_msg
 
 
 

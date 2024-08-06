@@ -1,5 +1,7 @@
 import requests
 import json
+from MMAPIS.config.config import OPENAI_CONFIG
+
 
 class LLMSummarizer:
     def __init__(self, api_key, base_url, model_config={},proxy=None,prompt_ratio:float = 0.8, **kwargs):
@@ -13,12 +15,12 @@ class LLMSummarizer:
 
     def init_model(self, model_config):
         default_config = {
-           'model': 'gpt-3.5-turbo-16k-0613',
-           'temperature': 0.9,
-           'max_tokens': 16385,
-           'top_p': 1,
-           'frequency_penalty': 0.1,
-           'presence_penalty': 0.2
+           'model': OPENAI_CONFIG['model_config']['model'],
+           'temperature': OPENAI_CONFIG['model_config']['temperature'],
+           'max_tokens': OPENAI_CONFIG['model_config']['max_tokens'],
+           'top_p': OPENAI_CONFIG['model_config']['top_p'],
+           'frequency_penalty': OPENAI_CONFIG['model_config']['frequency_penalty'],
+           'presence_penalty': OPENAI_CONFIG['model_config']['presence_penalty']
         }
         default_config.update(model_config)
         self.model = default_config['model']

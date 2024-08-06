@@ -1,4 +1,3 @@
-import  torch
 from functools import singledispatch
 from typing import List, Union
 import io
@@ -21,6 +20,7 @@ import base64
 
 
 def get_best_gpu(choice_list=None):
+    import torch
     total_gpus = torch.cuda.device_count()
 
     if not choice_list:
@@ -47,6 +47,7 @@ def get_best_gpu(choice_list=None):
 
 
 def get_batch_size():
+    import torch
     if torch.cuda.is_available():
         best_gpu, free_memory = get_best_gpu([0])
         BATCH_SIZE = int(
@@ -275,14 +276,14 @@ def num_tokens_from_messages(messages, model="gpt-3.5-turbo-16k-0613",
         encoding = tiktoken.get_encoding("cl100k_base")
     else:
         encoding = tiktoken.get_encoding(encode_model)
+    if isinstance(messages, dict):
+        messages = [messages]
+    elif isinstance(messages, list):
+        pass
+    elif isinstance(messages, str):
+        messages = [{"role": "user", "content": messages}]
     num_tokens = 0
     if "gpt-3.5-turbo" in model:  # note: future models may deviate from this
-        if isinstance(messages, dict):
-            messages = [messages]
-        elif isinstance(messages, list):
-            pass
-        elif isinstance(messages, str):
-            messages = [{"role": "user", "content": messages}]
         for message in messages:
             num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
             for key, value in message.items():
@@ -339,7 +340,8 @@ def zip_dir_to_bytes(dir_path):
 
 
 
-def extract_zip_from_bytes(zip_data, extract_dir):
+def extract_zip_from_bytes(zip_data,
+                           extract_dir):
     """
     Extracts contents from byte data of a ZIP file into a specified directory.
 
@@ -384,7 +386,7 @@ def img_to_bytes(img_path):
 
 
 def img_to_html(img_path_ls:List[str],
-                img_height:int=400,
+                img_height:int=200,
                 margin:int=10):
     prefix = f'<div style="display: flex; overflow-x: scroll; align-items: center; padding: 5px; height: {img_height}px;">'
     img_prefix = f'<div style="flex: 0 0 auto; margin-right: {margin}px; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center;">'
@@ -392,14 +394,14 @@ def img_to_html(img_path_ls:List[str],
     res = prefix + '\n'
     for img_path in img_path_ls:
         img_html = f'<img src="{img_path}" style="height: 100%; object-fit: scale-down;" />'
-        res +=  img_html + '\n'
+        res +=  img_prefix + '\n' + img_html + '\n'
     res += img_suffix + '\n' + '</div>'
     return res
 
 
 
 def display_markdown(md_path:str,
-                     img_height:int=400,
+                     img_height:int=300,
                      margin:int=10):
     with open(md_path, 'r') as md_file:
         md_text = md_file.read()
@@ -478,8 +480,13 @@ def avg_score(score_dir: Union[str, Path], num_dim: int = 6) -> list:
             text = file.read()
 
         match = re.search(r'scoreData = (\[.*?\]);', text, re.DOTALL)
+        print(f"match:{match},match.group(1):{match.group(1)}")
         if match:
-            scores = eval(match.group(1))
+            try:
+                scores = eval(match.group(1))
+            except Exception as e:
+                logging.error(f"Error evaluating score data in file {file_path}: {e}")
+                continue
             total_counts += 1
             for i in range(num_dim):
                 dim_totals[i] += scores[i]["score"]
@@ -490,3 +497,14 @@ def avg_score(score_dir: Union[str, Path], num_dim: int = 6) -> list:
 
     avg_scores = [round(total / total_counts, 2) for total in dim_totals]
     return avg_scores
+
+
+
+
+
+def torch_gc(CUDA_DEVICE="cuda:0"):
+    import torch
+    if torch.cuda.is_available():
+        with torch.cuda.device(CUDA_DEVICE):
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()

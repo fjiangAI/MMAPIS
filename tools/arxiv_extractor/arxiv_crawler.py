@@ -79,6 +79,7 @@ class ArxivCrawler(CrawlerBase):
         content = soup.find_all('p', {'class': 'list-title is-inline-block'}, limit=2 * max_return)
         links = []
         for i in range(len(content)):
+            print("content[i]:",content[i])
             link = content[i].find_all('a', string=re.compile("pdf"))
             if link:
                 links.append(link[0]['href'])
@@ -93,7 +94,7 @@ class ArxivCrawler(CrawlerBase):
             title_t, abs_t, author_t = str(title_t), str(abs_t), str(author_t)
             title, abstract, author = self.extra_pure_text(title_t, abs_t, author_t, line_length=line_length, return_md= return_md)
             if return_md:
-                title = '[' + title + '](' + links[i] + ')'
+                title = '[' + title + '](' + links[i] + ')' if links[i] is not None else title
             article = Article(title=title, abstract=abstract, authors=author, pdf_url=links[i])
             articles.append(article)
         articles = self.remove_na_duplicates(articles)
@@ -114,6 +115,8 @@ class ArxivCrawler(CrawlerBase):
                   'hep-ex', 'hep-lat', 'hep-ph', 'hep-th', 'math-ph', 'nucl-ex', 'nucl-th', 'quant-ph']
         assert daily_type in type_l, f"daily_type:{daily_type} must be one of {type_l}"
         url = "https://arxiv.org/list/" + daily_type + "/new"
+        ## url = f"http://xxx.itp.ac.cn/list/{daily_type}/new"
+        print(f"url:{url}")
         logging.info(f"fetching {url}")
 
         try:
@@ -145,18 +148,24 @@ class ArxivCrawler(CrawlerBase):
         # Links are all in <dl> tag after New submissions
         cross_lists_tag = soup.find("h3", string=re.compile("New submissions"))
         # Get next tag
+        ## Cross submissions list
         cross_lists = cross_lists_tag.find_next("dl")
-        links_containers = cross_lists.find_all("span", attrs={"class": "list-identifier"}, limit=2 * max_return)
+        ## New submissions list
+        # new_lists = cross_lists.find_previous("dl")
+        links_containers = cross_lists.find_all("dt", limit=2 * max_return)
         parsed_links = []
         for i, container in enumerate(links_containers):
             link = container.find("a", attrs={"title": "Download PDF"})
+            print(f"link:{link}")
             if link is not None:
                 parsed_links.append("https://arxiv.org" + link["href"])
+                ## parsed_links.append("http://xxx.itp.ac.cn" + link["href"])
             else:
                 logging.warning(f'No link found in article {i}')
                 parsed_links.append(None)
         # links = cross_lists.find_all("a", attrs={"title": "Download PDF"})
         # parsed_links = ["https://arxiv.org" + link["href"] for link in links]
+        print(f"parsed_links:{len(parsed_links)}")
         articles = []
         meta_data = cross_lists.find_all("div", attrs={"class": "meta"}, limit=2 * max_return)
         for i, meta_info in enumerate(meta_data):
@@ -166,7 +175,7 @@ class ArxivCrawler(CrawlerBase):
             authors = str(meta_info.find("div", attrs={"class": "list-authors"}))
             title, abstract, authors = self.extra_pure_text(title_text, abs_text, authors, line_length=line_length,return_md=return_md)
             if return_md:
-                title = '[' + title + '](' + parsed_links[i] + ')'
+                title = '[' + title + '](' + parsed_links[i] + ')' if parsed_links[i] is not None else title
             article = Article(title=title, abstract=abstract, authors=authors, pdf_url=parsed_links[i])
             articles.append(article)
 
@@ -330,4 +339,11 @@ class ArxivCrawler(CrawlerBase):
         return ' '.join(text)
 
 
-
+if __name__ == "__main__":
+    crawler = ArxivCrawler()
+    print("crawler:",crawler)
+    articles = crawler.run_keyword_crawler(key_word='quantum computing', max_return=5)
+    print(articles)
+    articles = crawler.run_daily_crawler(daily_type='cs', max_return=5)
+    print(articles)
+    print("Done")

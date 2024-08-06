@@ -1,35 +1,43 @@
 from MMAPIS.server.downstream.audio_broadcast.script_conversion import Broadcast_Generator
-from MMAPIS.tools.tts import YouDaoTTSConverter
+from MMAPIS.tools.tts import YouDaoTTSConverter, OpenAI_TTSConverter
 from typing import List, Union
 from MMAPIS.config.config import TTS_CONFIG,OPENAI_CONFIG, APPLICATION_PROMPTS
 import reprlib
 import os
 import logging
+
+
 class BroadcastTTSGenerator():
     def __init__(self,
                  llm_api_key,
                  llm_base_url,
                  tts_base_url:str=None,
                  tts_api_key:str=None,
+                 tts_model:str="youdao",
                  app_secret:str=None,
                  model_config:dict={},
                  proxy:dict = None,
                  prompt_ratio:float = 0.8,
                  **kwargs
                  ):
+        self.tts_model = tts_model
         self.broadcast_generator = Broadcast_Generator(api_key=llm_api_key,
-                                                       base_url=llm_base_url,
-                                                       model_config=model_config,
-                                                       proxy=proxy,
-                                                       prompt_ratio=prompt_ratio,
-                                                       **kwargs)
+                                                   base_url=llm_base_url,
+                                                   model_config=model_config,
+                                                   proxy=proxy,
+                                                   prompt_ratio=prompt_ratio,
+                                                   **kwargs)
 
-        self.tts_converter = YouDaoTTSConverter(base_url=tts_base_url,
+        if tts_model == "youdao":
+            self.tts_converter = YouDaoTTSConverter(base_url=tts_base_url,
                                                 api_key=tts_api_key,
                                                 app_secret=app_secret,
                                                 proxy=proxy,
                                                 )
-        print("self.tts_converter:",self.tts_converter.__dict__)
+        elif tts_model == "openai":
+            self.tts_converter = OpenAI_TTSConverter(base_url=llm_base_url,api_key=llm_api_key)
+        else:
+            raise ValueError(f"Unsupported TTS model: {tts_model}, supported models are: 'youdao','openai'")
 
 
     def broadcast_script_generation(self,
@@ -51,7 +59,7 @@ class BroadcastTTSGenerator():
         return flag,content
 
     def text2speech(self, text:str, return_bytes:bool = False):
-        if not all([self.tts_converter.base_url,self.tts_converter.api_key,self.tts_converter.app_secret]):
+        if self.tts_model == "youdao" and not all([self.tts_converter.base_url,self.tts_converter.api_key,self.tts_converter.app_secret]):
             logging.warning("Due to missing TTS credentials, the text to speech conversion will not be performed.")
             return True,None
         flag, bytes_content = self.tts_converter.convert_texts_to_speech(text,return_bytes=return_bytes)

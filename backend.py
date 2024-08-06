@@ -2,17 +2,18 @@ import os
 import os.path as osp
 import io
 import sys
+import time
 from datetime import datetime
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 from MMAPIS.config.config import GENERAL_CONFIG,APPLICATION_PROMPTS, ALIGNMENT_CONFIG,OPENAI_CONFIG,LOGGER_MODES
-from MMAPIS.tools import ArxivCrawler,NougatPredictor, get_batch_size,download_pdf,YouDaoTTSConverter,extract_zip_from_bytes,zip_dir_to_bytes,init_logging,avg_score,img2url,is_allowed_file_type,path2url
+from MMAPIS.tools import ArxivCrawler,NougatPredictor, get_batch_size,download_pdf,YouDaoTTSConverter,extract_zip_from_bytes,zip_dir_to_bytes,init_logging,avg_score,img2url,is_allowed_file_type,path2url,bytes2io
 from MMAPIS.server import Section_Summarizer,Summary_Integrator,img_txt_alignment,Paper_Recommender,Blog_Generator,BroadcastTTSGenerator,Regenerator,MultiModal_QA_Generator
-from MMAPIS.config.config import GENERAL_CONFIG,APPLICATION_PROMPTS, ALIGNMENT_CONFIG,OPENAI_CONFIG,LOGGER_MODES,APPLICATION_PROMPTS, SECTION_PROMPTS,INTEGRATE_PROMPTS,TEMPLATE_DIR
+from MMAPIS.config.config import GENERAL_CONFIG,APPLICATION_PROMPTS, ALIGNMENT_CONFIG,OPENAI_CONFIG,LOGGER_MODES,APPLICATION_PROMPTS, SECTION_PROMPTS,INTEGRATE_PROMPTS,TEMPLATE_DIR,TTS_CONFIG
 from pathlib import Path
 from fastapi.responses import ORJSONResponse,PlainTextResponse,FileResponse,Response,HTMLResponse,RedirectResponse
 from fastapi.exceptions import RequestValidationError
 from typing_extensions import Annotated
-from fastapi import FastAPI,Body,File, UploadFile,Form
+from fastapi import FastAPI,Body,File, UploadFile,Form,Depends
 import json
 from typing import List,Union,Literal,Dict
 from pydantic import BaseModel,Field
@@ -25,12 +26,37 @@ from fastapi.staticfiles import StaticFiles
 import tempfile
 from urllib.parse import urljoin
 import re
-
+import requests
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import asynccontextmanager
+import asyncio
 
 
 logger = init_logging(logger_mode=LOGGER_MODES)
-app = FastAPI(title="MMAPIS",description="A Multi-Modal Automated Academic Papers Interpretation System",version="0.1.0")
+app = FastAPI(title="MMAPIS",description="A Multi-Modal Automated Academic Papers Interpretation System",version="0.2.0")
+gpu_semaphore = asyncio.Semaphore(1)
 
+origins = [
+    GENERAL_CONFIG['middleware_url'],
+    GENERAL_CONFIG['frontend_url'],
+]
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@asynccontextmanager
+async def gpu_lock():
+    await gpu_semaphore.acquire()
+    try:
+        yield
+    finally:
+        gpu_semaphore.release()
 
 def handle_pdf_content(pdf_content:UploadFile,
                        pdf:str,
@@ -43,9 +69,12 @@ def handle_pdf_content(pdf_content:UploadFile,
         os.makedirs(dir_name,exist_ok=True)
         temp_time = datetime.now().strftime("%Y%m%d%H%M%S")
         pdf_path = os.path.join(dir_name,f"{file_name}_{temp_time}.pdf")
-        with open(pdf_path,'wb') as f:
-            f.write(content)
-        return True, pdf_path
+        try:
+            with open(pdf_path,'wb') as f:
+                f.write(content)
+            return True, pdf_path
+        except Exception as e:
+            return False, f"Write pdf content to {pdf_path} error: {e}"
 
     else:
         if pdf is None:
@@ -56,13 +85,7 @@ def handle_pdf_content(pdf_content:UploadFile,
                 save_dir=save_dir,
                 temp_file= temp_file
             )
-            if not flag:
-                return False, f"download pdf from {pdf} failed"
-            else:
-                return flag, pdf_path
-
-
-
+            return flag, pdf_path
 
 
 
@@ -121,7 +144,7 @@ class gpt_model_config(BaseModel):
 
 
 class Summarizer_Config(BaseModel):
-    rpm_limit:int = 3
+    rpm_limit:int = OPENAI_CONFIG['rpm_limit']
     ignore_titles: Union[List, None] = OPENAI_CONFIG['ignore_title']
     prompt_ratio:float = OPENAI_CONFIG['prompt_ratio']
     num_processes:int = OPENAI_CONFIG['num_processes']
@@ -259,7 +282,7 @@ class RecommendationRequest(BaseModel):
     api_key:str = Field(...,example="xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
     base_url: str = Field(...,example="https://api.ai-gaochao.cn/v1")
     document_level_summary: str = ...
-    raw_text: str = ...
+    raw_md_text: str = ...
     score_prompts: dict = APPLICATION_PROMPTS["score_prompts"]
     summarizer_params: Summarizer_Config = Summarizer_Config()
     model_config = {
@@ -372,23 +395,6 @@ class RegenerationRequest(BaseModel):
         }
     }
 
-
-
-
-def str2path(path_l:Union[str,List[Path]]):
-    if not isinstance(path_l,list):
-        path_l = [path_l]
-    res = []
-    for path in path_l:
-        if 'http' in path:
-            res.append(path)
-        else :
-            res.append(Path(path))
-    if len(path_l) == 1:
-        return res[0]
-    else:
-        return res
-
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     """
@@ -475,51 +481,55 @@ def fetch_links(link_request: ArxivRequest = Body(...)):
 @app.post("/pdf2md/",response_class=ORJSONResponse,summary='model predict with nougat',
                                                           description="transfer the article format from pdf to txt with nougat model",
                                                           tags=["backend","preprocess"])
-def fetch_predictions(pdf:Union[str,List[str]] = Form(None,example="https://arxiv.org/pdf/xxxx.xxxx",description="pdf url or list of pdf urls, if pdf_content is not None, this param will be ignored"),
+async def fetch_predictions(pdf:Union[str,List[str]] = Form(None,example="https://arxiv.org/pdf/xxxx.xxxx",description="pdf url or list of pdf urls, if pdf_content is not None, this param will be ignored"),
                       pdf_name:Union[str,List[str]] = Form(None,example="xxxx.xxxx"),
                       markdown:bool = Form(True,example=True),
-                      pdf_content:List[UploadFile] = File(None,description="Multiple files as UploadFile")):
-    nougat_preditor = NougatPredictor(markdown=markdown)
-    if pdf_content:
-        pdfs = [pdf.file.read() for pdf in pdf_content]
-        pdf_names = [pdf.filename for pdf in pdf_content] if pdf_name is None else pdf_name
-        if isinstance(pdf_names,str):
-            pdf_names = [pdf_names]
-
-    else:
-        if pdf is None:
-            data = {
-                "status": "request error",
-                "message": "No pdf file or pdf url found"
-            }
-            return ORJSONResponse(content=data, status_code=400)
+                      pdf_content:List[UploadFile] = File(None,description="Multiple files as UploadFile"),
+                      gpu_access: asyncio.Semaphore = Depends(gpu_lock)
+                    ):
+    async with gpu_access:
+        nougat_preditor = NougatPredictor(markdown=markdown)
+        if pdf_content:
+            pdfs = [await pdf.read() for pdf in pdf_content]
+            pdf_names = [pdf.filename for pdf in pdf_content] if pdf_name is None else pdf_name
+            if isinstance(pdf_names,str):
+                pdf_names = [pdf_names]
         else:
-            pdfs = pdf if isinstance(pdf, List) else [pdf]
-            pdf_names = pdf_name if isinstance(pdf_name, List) else [pdf_name] if pdf_name is not None else [None] * len(pdfs)
-            assert len(pdf_names) == len(pdfs),f"pdf_names length {len(pdf_names)} not equal to pdfs length {len(pdfs)}"
+            if pdf is None:
+                data = {
+                    "status": "request error",
+                    "message": "No pdf file or pdf url found"
+                }
+                return ORJSONResponse(content=data, status_code=400)
+            else:
+                pdfs = pdf if isinstance(pdf, List) else [pdf]
+                pdf_names = pdf_name if isinstance(pdf_name, List) else [pdf_name] if pdf_name is not None else [None] * len(pdfs)
+                assert len(pdf_names) == len(pdfs),f"pdf_names length {len(pdf_names)} not equal to pdfs length {len(pdfs)}"
 
-    try :
-        article_ls = nougat_preditor.pdf2md_text(
-            pdfs=pdfs,
-            pdf_names=pdf_names)
+        try:
+            loop = asyncio.get_event_loop()
+            article_ls = await loop.run_in_executor(None, nougat_preditor.pdf2md_text, pdfs, pdf_names)
+            # article_ls = nougat_preditor.pdf2md_text(
+            #     pdfs=pdfs,
+            #     pdf_names=pdf_names)
 
-        data = {
-            "status": "success",
-            "message": [
-                {"file_name": article.file_name,
-                 "text": article.content} for article in article_ls
-            ]
-        }
+            data = {
+                "status": "success",
+                "message": [
+                    {"file_name": article.file_name,
+                     "text": article.content} for article in article_ls
+                ]
+            }
 
-        return ORJSONResponse(content=data, status_code=200)
-    except Exception as e:
-        logger.error('nougat_predict error: %s', e)
-        error_message = f"An error occurred: {str(e)}"
-        data = {
-            "status": "nougat_predict internal error",
-            "message": error_message
-        }
-        return ORJSONResponse(content=data, status_code=500)
+            return ORJSONResponse(content=data, status_code=200)
+        except Exception as e:
+            logger.error('nougat_predict error: %s', e)
+            error_message = f"An error occurred: {str(e)}"
+            data = {
+                "status": "nougat_predict internal error",
+                "message": error_message
+            }
+            return ORJSONResponse(content=data, status_code=500)
 
 
 @app.post("/alignment/",response_class=Response,summary='align text with image',
@@ -548,7 +558,7 @@ def fetch_alignment(
         file_path = img_txt_alignment(
                                         text=text,
                                         pdf = pdf_path,
-                                        save_dir=GENERAL_CONFIG['save_dir'],
+                                        save_dir=GENERAL_CONFIG['app_save_dir'],
                                         file_name=pdf_path.stem,
                                         raw_md_text=raw_md_text,
                                         init_grid=init_grid,
@@ -563,8 +573,8 @@ def fetch_alignment(
         logger.info(f"remove {osp.dirname(file_path)}")
         return Response(zip_file, media_type="application/zip", headers={"Content-Disposition": f"attachment; filename={Path(file_path).stem}.zip"})
     except Exception as e:
-        logger.error('alignment error: %s', e)
-        error_message = f"An error occurred: {str(e)}"
+        error_message = f"alignment internal error: {str(e)}"
+        logger.error(error_message)
         data = {
             "status": "alignment internal error",
             "message": error_message
@@ -584,18 +594,27 @@ def fetch_alignment(
                                                           tags=["backend","application"])
 def fetch_regeneration(regeneration_request: RegenerationRequest = Body(...)):
     try:
-        regenerator = Regenerator(api_key=regeneration_request.api_key,
+        # regenerator = Regenerator(api_key=regeneration_request.api_key,
+        #                           base_url=regeneration_request.base_url,
+        #                           model_config=vars(regeneration_request.summarizer_params.gpt_model_params),
+        #                           prompt_ratio=regeneration_request.summarizer_params.prompt_ratio,
+        #                           )
+        # flag, response = regenerator.regeneration(
+        #     document_level_summary=regeneration_request.document_level_summary,
+        #     section_summaries=regeneration_request.section_summaries,
+        #     regeneration_prompts=regeneration_request.regenerate_prompts,
+        #     response_only=True,
+        #     reset_messages=True
+        # )
+        integrator = Summary_Integrator(api_key=regeneration_request.api_key,
                                   base_url=regeneration_request.base_url,
                                   model_config=vars(regeneration_request.summarizer_params.gpt_model_params),
                                   prompt_ratio=regeneration_request.summarizer_params.prompt_ratio,
-                                  )
-        flag, response = regenerator.regeneration(
-            document_level_summary=regeneration_request.document_level_summary,
-            section_summaries=regeneration_request.section_summaries,
-            regeneration_prompts=regeneration_request.regenerate_prompts,
-            response_only=True,
-            reset_messages=True
-        )
+                                        )
+        flag, response = integrator.integrate_summary(section_summaries=regeneration_request.section_summaries,
+                                                      integrate_prompts=regeneration_request.regenerate_prompts,
+                                                      response_only=True,
+                                                      reset_messages=True)
         if flag:
             data = {
                 "status": "success",
@@ -718,16 +737,21 @@ def fetch_recommendation(recommendation_request: RecommendationRequest = Body(..
         )
         flag, response = paper_recommender.recommendation_generation(
             document_level_summary=recommendation_request.document_level_summary,
-            article=recommendation_request.raw_text,
+            article=recommendation_request.raw_md_text,
             score_prompts=recommendation_request.score_prompts
         )
         if flag:
+            avg_score_ls = [6] * len(response)
+            for i, avgscore in enumerate(avg_score_ls):
+                response[i]['avg_score'] = avgscore
+            print("response",response)
             data = {
                 "status": "success",
                 "message": response
             }
             return ORJSONResponse(content=data, status_code=200)
         else:
+
             data = {
                 "status": "recommendation generation error",
                 "message": response
@@ -818,11 +842,29 @@ def fetch_blog(
         path = Path(response)
         if flag:
             logging.info(f"saving blog to {path}")
-            zip_file = zip_dir_to_bytes(dir_path=osp.dirname(path))
+            bytes_data = zip_dir_to_bytes(dir_path=osp.dirname(path))
             shutil.rmtree(osp.dirname(path))
-            return Response(zip_file, media_type="application/zip", headers={"Content-Disposition": f"attachment; filename={Path(path).stem}.zip"})
+            shutil.rmtree(osp.dirname(pdf_path))
 
-
+            files = [("zip_content", bytes2io(bytes_data))]
+            data = {
+                "file_type": "blog_md",
+            }
+            response = requests.post(f"{GENERAL_CONFIG['middleware_url']}/upload_zip_file/", files=files, data=data)
+            json_info = handle_api_response(response)
+            if json_info["status"] == "success":
+                markdown_content = json_info["message"]
+                data = {
+                    "status": "success",
+                    "message": markdown_content
+                }
+                return ORJSONResponse(content=data, status_code=200)
+            else:
+                data = {
+                    "status": "Saving markdown to middleware error",
+                    "message": json_info["message"]
+                }
+                return ORJSONResponse(content=data, status_code=500)
         else:
             data = {
                 "status": "blog generation error",
@@ -857,10 +899,12 @@ class BroadcastScriptRequest(BaseModel):
     summarizer_params: Summarizer_Config = Summarizer_Config()
 
 class TTSRequest(BaseModel):
-    tts_api_key: str
-    tts_base_url: str
-    app_secret: str
-    text: str
+    text: str = Field(...,example="text",description="text to be converted to speech")
+    model: str = Field(TTS_CONFIG['model'],example="youdao")
+    api_key: str = Field(TTS_CONFIG['api_key'],example="xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+    base_url: str = Field(TTS_CONFIG['base_url'],example="https://xxxxxx")
+    app_secret: str = Field(TTS_CONFIG['app_secret'],example="xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+
 
 
 class Multimodal_QA_Request(BaseModel):
@@ -875,7 +919,7 @@ class Multimodal_QA_Request(BaseModel):
     max_grid: int = ALIGNMENT_CONFIG['max_grid']
     ignore_titles: Union[List, None] = OPENAI_CONFIG['ignore_title']
     detailed_img: bool = False
-    img_width: int = 400
+    img_width: int = 300
     margin: int = 10
     prompt_ratio: float = 0.8
     summarizer_params: Summarizer_Config = Summarizer_Config()
@@ -991,20 +1035,56 @@ def Broadcast_script_generation(broadcast_request:BroadcastScriptRequest = Body(
                                                 description="generate broadcast based on the document level summary",
                                                 tags=["backend","application"])
 def fetch_tts(tts_request:TTSRequest = Body(...)):
-    broadcast_tts_generator = BroadcastTTSGenerator(
-                                                    llm_api_key=None,
-                                                    llm_base_url=None,
-                                                    tts_base_url=tts_request.tts_base_url,
-                                                    tts_api_key=tts_request.tts_api_key,
-                                                    app_secret=tts_request.app_secret,
-                                                    )
+    print("tts_request: ",tts_request.dict())
+    if tts_request.model == "youdao":
+        broadcast_tts_generator = BroadcastTTSGenerator(
+                                                        llm_api_key=None,
+                                                        llm_base_url=None,
+                                                        tts_base_url=tts_request.base_url,
+                                                        tts_api_key=tts_request.api_key,
+                                                        app_secret=tts_request.app_secret,
+                                                        tts_model= tts_request.model
+                                                        )
+    elif tts_request.model == "openai":
+        tts_request.api_key = OPENAI_CONFIG['api_key']
+        tts_request.base_url = OPENAI_CONFIG['base_url']
+        broadcast_tts_generator = BroadcastTTSGenerator(
+                                                        llm_api_key=tts_request.api_key,
+                                                        llm_base_url=tts_request.base_url,
+                                                        tts_model= tts_request.model
+                                                        )
+    else:
+        return ORJSONResponse(content={"status": "tts model error", "message": "tts model not supported"}, status_code=400)
+    print("broadcast_tts_generator: ",broadcast_tts_generator.tts_model)
     try:
         flag, bytes_data = broadcast_tts_generator.text2speech(
             text=tts_request.text,
             return_bytes=True
         )
         if flag:
-            return Response(content=bytes_data, media_type="audio/mp3")
+            files = [("zip_content", bytes2io(bytes_data))]
+            data = {
+                "file_type": "mp3",
+            }
+            response = requests.post(
+                GENERAL_CONFIG['middleware_url'] + "/upload_zip_file/",
+                files=files, data=data
+            )
+            print("response: ",response.text)
+            json_info = handle_api_response(response)
+            if json_info["status"] == "success":
+                mp3_url = json_info["message"]
+            else:
+                data = {
+                    "status": "Saving mp3 error",
+                    "message": json_info["message"]
+                }
+                return ORJSONResponse(content=data, status_code=500)
+            data = {
+                "status": "success",
+                "message": mp3_url
+            }
+            return ORJSONResponse(content=data, status_code=200)
 
         else:
             data = {
@@ -1025,9 +1105,10 @@ class RedirectRequest(BaseModel):
     usage: str
     text:str
     bytes_content:bytes = None
-    api_key:str = ""
-    base_url:str = ""
-    document_level_summary: str = ""
+    api_key:str = Field("",example="xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+    base_url:str = Field("",example="https://xxxxxx")
+    document_level_summary: str = Field("",example="document level summary")
+    app_secret: str = Field("",example="xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
 
 @app.post("/app/document_level_summary/",response_class=ORJSONResponse,summary= "document level summary",
                                                             description="generate document level summary",
@@ -1039,12 +1120,12 @@ async def fetch_app_document_summary(
         pdf: Union[str, None] = Form(None, example="https://www.example.com/sample.pdf",
                                      description="pdf url for the article, if pdf_content is not None, this will be ignored"),
         file_name: str = Form(None, example="blog", description="file name for the pdf"),
-        summary_prompts: str = Form(json.dumps(APPLICATION_PROMPTS["blog_prompts"]),
-                                 example="'{'blog': 'xxx', 'blog_system': 'xxx'}'"),
+        summary_prompts: str = Form(json.dumps(SECTION_PROMPTS), example="'{'system': 'xxx', 'abstract': 'xxx'}'"),
         integrate_prompts: str = Form(json.dumps(INTEGRATE_PROMPTS)),
         init_grid: int = Form(ALIGNMENT_CONFIG["init_grid"], example=2),
         max_grid: int = Form(ALIGNMENT_CONFIG["max_grid"], example=4),
-        img_width: int = Form(ALIGNMENT_CONFIG["img_width"], example=600, description="display width of the image"),
+        img_width: int = Form(ALIGNMENT_CONFIG["img_width"], example=400, description="display width of the image"),
+        margin: int = Form(ALIGNMENT_CONFIG["margin"], example=10, description="margin of the image"),
         threshold: float = Form(ALIGNMENT_CONFIG["threshold"], example=0.8,
                                 description="threshold of similarity for alignment"),
         summarizer_params: str = Form(json.dumps(summarizer_config.dict())),
@@ -1081,7 +1162,7 @@ async def fetch_app_document_summary(
         section_summmary = res
     else:
         data = {
-            "status": "section_summary generation error",
+            "status": "Section-level summary generation error",
             "message": res
         }
         return ORJSONResponse(content=data, status_code=500)
@@ -1097,7 +1178,7 @@ async def fetch_app_document_summary(
                                                   reset_messages=True)
     if not flag:
         data = {
-            "status": "document_summary generation error",
+            "status": "Document-level summary generation error",
             "message": response
         }
         return ORJSONResponse(content=data, status_code=500)
@@ -1113,16 +1194,31 @@ async def fetch_app_document_summary(
             init_grid=init_grid,
             max_grid=max_grid,
             img_width=img_width,
+            margin=margin,
             threshold=threshold,
         )
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-            markdown_content = f.read()
-        markdown_content = re.sub(r'(?<![\n#])(#+\s+.*?\n+)', r'\n\1', markdown_content)
-        markdown_content = img2url(
-            text=markdown_content,
-            base_url=GENERAL_CONFIG['backend_url'],
-            img_dir=osp.relpath(osp.dirname(file_path),GENERAL_CONFIG['app_save_dir'])
-        )
+        dir_path = file_path.parent
+        bytes_data = zip_dir_to_bytes(dir_path)
+        try:
+            shutil.rmtree(dir_path)
+            shutil.rmtree(pdf_path.parent)
+        except Exception as e:
+            logger.error(f"remove {dir_path} & {pdf_path.parent} error: {e}")
+        files = [("zip_content",bytes2io(bytes_data))]
+        data = {
+            "file_type": "blog_md"
+        }
+        response = requests.post(f"{GENERAL_CONFIG['middleware_url']}/upload_zip_file/",files=files,data=data)
+        json_info = handle_api_response(response)
+        if json_info["status"] == "success":
+            markdown_content = json_info["message"]
+        else:
+            data = {
+                "status": "Saving markdown to middleware error",
+                "message": json_info["message"]
+            }
+            return ORJSONResponse(content=data, status_code=500)
+
         data = {
             "status": "success",
             "message": {
@@ -1134,25 +1230,6 @@ async def fetch_app_document_summary(
         return ORJSONResponse(content=data, status_code=200)
 
 
-app.mount("/index/", StaticFiles(directory=f"{GENERAL_CONFIG['app_save_dir']}"), name="index")
-
-
-
-@app.get("/index/{path_file:path}",response_class=HTMLResponse,summary= "get static file",
-                                                description="get static file",
-                                                tags=["Middleware","file"])
-async def get_static_file(path_file: str):
-    full_path = osp.join(GENERAL_CONFIG['app_save_dir'], path_file)
-    if not is_allowed_file_type(full_path):
-        return HTMLResponse(
-            "<h1>File type not allowed</h1>",
-            status_code=403,
-        )
-    elif full_path.endswith(".html"):
-        with open(full_path, "r",encoding="utf-8",errors="ignore") as f:
-            html_content = f.read()
-        return HTMLResponse(content=html_content)
-    return StaticFiles(directory=GENERAL_CONFIG['app_save_dir']).get_response(path_file)
 
 def filter_unsafe_markdown(text:str):
     text = re.sub(r'\$\{\}\^\{(.*?)\}\$', r'<sup>\1</sup>', text)
@@ -1168,6 +1245,15 @@ def create_new_doc(
         html_content = f.read()
 
     redir_request.text = filter_unsafe_markdown(redir_request.text)
+    if redir_request.usage == "recommend":
+        print("redir_request.text: ", redir_request.text,"type: ",type(redir_request.text))
+        avg_score_ls = avg_score(score_dir=save_dir)
+        redir_request.text = eval(redir_request.text)
+        for i,avgscore in enumerate(avg_score_ls):
+            redir_request.text[i]["avgscore"] = avgscore
+        redir_request.text = str(redir_request.text)
+    # elif redir_request.usage == "speech":
+    #     html_content = html_content.replace("{{api_key}}", redir_request.api_key).replace("{{base_url}}", redir_request.base_url).replace("{{secret_key}}" , redir_request.app_secret)
     html_content = html_content.replace("{{text}}", redir_request.text)
     bytes_content = redir_request.bytes_content
     if bytes_content:
@@ -1175,15 +1261,23 @@ def create_new_doc(
     if redir_request.usage == "qa":
         redir_request.document_level_summary = filter_unsafe_markdown(redir_request.document_level_summary)
         html_content = html_content.replace("{{document_level_summary}}", redir_request.document_level_summary).replace("{{base_url}}", OPENAI_CONFIG["base_url"]).replace("{{api_key}}", redir_request.api_key)
-    elif redir_request.usage == "recommend":
-        avg_score_ls = avg_score(score_dir=save_dir)
-        html_content = html_content.replace("{{avg_score}}", str(avg_score_ls))
-    id = uuid.uuid4()
-
-    file_path = osp.join(save_dir, f"{id}.html")
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
-    redirect_url = urljoin(base=GENERAL_CONFIG['backend_url'], url=f"/index/{redir_request.usage}_html/{id}.html")
+    if redir_request.usage in ["qa","speech"]:
+        html_content = html_content.replace("{{backend_url}}", GENERAL_CONFIG["backend_url"])
+    bytes_text = html_content.encode("utf-8")
+    files = [("zip_content", bytes_text)]
+    data = {
+        "file_type": f"{redir_request.usage}_html"
+    }
+    response = requests.post(f"{GENERAL_CONFIG['middleware_url']}/upload_zip_file/", files=files, data=data)
+    json_info = handle_api_response(response)
+    if json_info["status"] == "success":
+        redirect_url = json_info["message"]
+    else:
+        data = {
+            "status": "Saving html to middleware error",
+            "message": json_info["message"]
+        }
+        return ORJSONResponse(content=data, status_code=500)
     return redirect_url
 
 
@@ -1201,17 +1295,22 @@ def handle_api_response(
             "message": response.body
         }
     else:
-        json_info = {
-            "status": "Unsupport response error",
-            "message": "Unsupport response type"
-        }
+        try:
+            json_info = response.json()
+        except Exception as e:
+            json_info = {
+                "status": "Unsupport response error",
+                "message": "Unsupport response type"
+            }
     return json_info
 
 
 
-@app.post("/app/",response_class=RedirectResponse,summary= "application generation",
-                                                description="generate application based on the document level summary",
-                                                tags=["Middleware","application"])
+@app.post("/app/regeneration/",
+          response_class=RedirectResponse,
+          summary= "regeneration",
+          description="generate application based on the document level summary",
+          tags=["Middleware","application"])
 async def fetch_app(
         api_key: str = Form(..., example="api_key", description="api_key for openai"),
         base_url: str = Form(..., example="base_url", description="base_url for openai"),
@@ -1222,141 +1321,14 @@ async def fetch_app(
         prompts: str = Form(None, example="prompts", description="prompts for the application"),
         pdf: Union[str, None] = Form(None, example="https://www.example.com/sample.pdf",
                                      description="pdf url for the article, if pdf_content is not None, this will be ignored"),
-        file_name: str = Form(None, example="blog", description="file name for the pdf"),
         init_grid: int = Form(ALIGNMENT_CONFIG["init_grid"], example=2),
         max_grid: int = Form(ALIGNMENT_CONFIG["max_grid"], example=4),
         img_width: int = Form(ALIGNMENT_CONFIG["img_width"], example=600, description="display width of the image"),
         threshold: float = Form(ALIGNMENT_CONFIG["threshold"], example=0.8,
                                 description="threshold of similarity for alignment"),
-        tts_api_key: str = Form(None, example="api_key", description="api_key for openai"),
-        tts_base_url: str = Form(None, example="base_url", description="base_url for openai"),
-        app_secret: str = Form(None, example="app_secret", description="app_secret"),
         summarizer_params: str = Form(json.dumps(summarizer_config.dict())),
         pdf_content: UploadFile = File(None, description="Multiple files as UploadFile")):
-    if not usage in ['blog', 'speech', 'regenerate','recommend','qa']:
-        data = {
-            "status": "usage error",
-            "message": f"usage {usage} not supported"
-        }
-        return ORJSONResponse(content=data, status_code=400)
-    if usage == "blog":
-        if not prompts:
-            prompts = json.dumps(APPLICATION_PROMPTS["blog_prompts"])
-        response = fetch_blog(
-            api_key=api_key,
-            base_url=base_url,
-            section_summary=section_summary,
-            document_level_summary=document_level_summary,
-            pdf=pdf,
-            file_name=file_name,
-            raw_md_text=raw_md_text,
-            blog_prompts=prompts,
-            init_grid=init_grid,
-            max_grid=max_grid,
-            img_width=img_width,
-            threshold=threshold,
-            summarizer_params=summarizer_params,
-            pdf_content=pdf_content
-        )
-        json_info = handle_api_response(response)
-        if json_info["status"] == "success":
-            blog_dir = osp.join(GENERAL_CONFIG['app_save_dir'],"blog_md")
-            os.makedirs(blog_dir,exist_ok=True)
-            save_dir = tempfile.mkdtemp(dir = blog_dir)
-            extract_zip_from_bytes(
-                zip_data=json_info["message"],
-                extract_dir=save_dir
-            )
-            md_path = [osp.join(save_dir, file) for file in os.listdir(save_dir) if file.endswith(".md")][0]
-            with open(md_path, "r", encoding="utf-8", errors="ignore") as f:
-                md_content = f.read()
-            md_content = img2url(
-                text=md_content,
-                base_url=GENERAL_CONFIG['backend_url'],
-                img_dir=osp.relpath(osp.dirname(md_path),GENERAL_CONFIG['app_save_dir'])
-            )
-            # md_content = re.sub(r'(?<!\n)(#+)', r'\n\1', md_content)
-            pattern = re.compile(r'(?<![\n#])(#+\s+.*?\n+)')
-            md_content = pattern.sub(r'\n\1', md_content)
-            redirect_url = create_new_doc(
-                redir_request=RedirectRequest(
-                    usage=usage,
-                    text=md_content,
-                    bytes_content=None,
-                )
-            )
-
-            return RedirectResponse(url=redirect_url, status_code=303)
-        else:
-            return ORJSONResponse(content=json_info, status_code=500)
-    elif usage == "speech":
-        if not prompts:
-            prompts = json.dumps(APPLICATION_PROMPTS["broadcast_prompts"])
-        prompts = json.loads(prompts)
-        broadcast_request = BroadcastScriptRequest(
-            llm_api_key=api_key,
-            llm_base_url=base_url,
-            document_level_summary=document_level_summary,
-            section_summaries=section_summary,
-            broadcast_prompts=prompts,
-            summarizer_params=json.loads(summarizer_params)
-        )
-        response = Broadcast_script_generation(
-            broadcast_request=broadcast_request
-        )
-        json_info = handle_api_response(response)
-        if json_info["status"] == "success":
-            broadcast_script = json_info["message"]
-            broadcast_script = re.sub(r'(?<![\n#])(#+\s+.*?\n+)', r'\n\1', broadcast_script)
-            if all([tts_api_key,tts_base_url,app_secret]):
-                tts_request = TTSRequest(
-                    tts_api_key=tts_api_key,
-                    tts_base_url=tts_base_url,
-                    app_secret=app_secret,
-                    text=broadcast_script
-                )
-                response = fetch_tts(tts_request=tts_request)
-                json_info = handle_api_response(response)
-                if json_info["status"] == "success":
-                    bytes_content = json_info["message"]
-                    dir_path = osp.join(GENERAL_CONFIG['app_save_dir'],"mp3")
-                    os.makedirs(dir_path,exist_ok=True)
-                    save_dir = tempfile.mkdtemp(dir= dir_path)
-                    broadcast_generator = BroadcastTTSGenerator(
-                        llm_api_key=None,
-                        llm_base_url=None,
-                    )
-                    mp3_path = broadcast_generator.save(bytes_content= bytes_content,
-                                                          save_dir= save_dir)
-                    mp3_url = path2url(
-                        path=mp3_path,
-                        base_url=GENERAL_CONFIG['backend_url'],
-                        absolute=True
-                    )
-
-                    redirect_url = create_new_doc(
-                        redir_request=RedirectRequest(
-                            usage="speech",
-                            text=broadcast_script,
-                            bytes_content=mp3_url
-                        )
-                    )
-                    return RedirectResponse(url=redirect_url, status_code=303)
-                else:
-                    return ORJSONResponse(content=json_info, status_code=500)
-            else:
-                redirect_url = create_new_doc(
-                    redir_request=RedirectRequest(
-                        usage=usage,
-                        text=broadcast_script,
-                        bytes_content=None,
-                    )
-                )
-                return RedirectResponse(url=redirect_url, status_code=303)
-        else:
-            return ORJSONResponse(content=json_info, status_code=500)
-
-    elif usage == "regenerate":
+    if usage == "regenerate":
         if not prompts:
             prompts = json.dumps(APPLICATION_PROMPTS["regenerate_prompts"])
         prompts = json.loads(prompts)
@@ -1392,61 +1364,96 @@ async def fetch_app(
                 img_width=img_width,
                 threshold=threshold,
             )
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                markdown_content = f.read()
-            markdown_content = img2url(
-                text=markdown_content,
-                base_url=GENERAL_CONFIG['backend_url'],
-                img_dir=osp.relpath(osp.dirname(file_path), GENERAL_CONFIG['app_save_dir'])
-            )
-            redirect_url = create_new_doc(
-                redir_request=RedirectRequest(
-                    usage=usage,
-                    text=markdown_content,
-                    bytes_content=None,
-                )
-            )
-            return RedirectResponse(url=redirect_url, status_code=303)
+            dir_path = file_path.parent
+            bytes_data = zip_dir_to_bytes(dir_path)
+            try:
+                shutil.rmtree(dir_path)
+                shutil.rmtree(pdf_path.parent)
+            except Exception as e:
+                logger.error(f"remove {dir_path} & {pdf_path.parent} error: {e}")
+            files = [("zip_content", bytes2io(bytes_data))]
+            data = {
+                "file_type": "regenerate_md"
+            }
+            response = requests.post(f"{GENERAL_CONFIG['middleware_url']}/upload_zip_file/", files=files, data=data)
+            json_info = handle_api_response(response)
+            if json_info["status"] == "success":
+                markdown_content = json_info["message"]
+                data = {
+                    "status": "success",
+                    "message": markdown_content
+                }
+            else:
+                data = {
+                    "status": "Saving markdown to middleware error",
+                    "message": json_info["message"]
+                }
+                return ORJSONResponse(content=data, status_code=500)
+
+            return ORJSONResponse(content=data, status_code=200)
         else:
             return ORJSONResponse(content=json_info, status_code=500)
 
-    elif usage == "recommend":
-        if not prompts:
-            prompts = json.dumps(APPLICATION_PROMPTS["score_prompts"])
-        prompts = json.loads(prompts)
-        recommendation_request = RecommendationRequest(
-            api_key=api_key,
-            base_url=base_url,
-            document_level_summary=document_level_summary,
-            raw_text=raw_md_text,
-            score_prompts=prompts,
-            summarizer_params=json.loads(summarizer_params)
-        )
-        response = fetch_recommendation(
-            recommendation_request=recommendation_request
-        )
-        json_info = handle_api_response(response)
-        if json_info["status"] == "success":
-            recommendation = json_info["message"]
-            redirect_url = create_new_doc(
-                redir_request=RedirectRequest(
-                    usage=usage,
-                    text=str(recommendation),
-                    bytes_content=None,
-                )
-            )
-            return RedirectResponse(url=redirect_url, status_code=303)
-        else:
-            return ORJSONResponse(content=json_info, status_code=500)
-    else:
-        redirect_url = create_new_doc(
-            redir_request=RedirectRequest(
-                usage=usage,
-                text=raw_md_text,
-                bytes_content=None,
-                base_url = base_url,
-                api_key = api_key,
-                document_level_summary = document_level_summary
-            )
-        )
-        return RedirectResponse(url=redirect_url, status_code=303)
+
+
+
+@app.post("/redirect/",response_class=RedirectResponse,summary= "redirect",
+                                                description="redirect to the application",
+                                                tags=["Middleware","application"])
+
+async def fetch_redirect(
+        text: str = Body(..., example="text", description="text to be converted to speech"),
+    ):
+    redirect_url = f"/test_html/?text={text}"
+    return RedirectResponse(url=redirect_url, status_code=303)
+
+@app.post("/test_html/", response_class=HTMLResponse)
+async def handle_form_submission(user_name: str = Form(...), text: str = Form(...),raw_md_text: str = Form(...)):
+    # Generate the HTML content dynamically
+    data = {
+        "user_name": user_name,
+        "text": len(text),
+        "raw_md_text": len(raw_md_text)
+    }
+    print("data: ",data)
+    return ORJSONResponse(content=data, status_code=200)
+
+
+@app.post("/blog_test/",response_class=ORJSONResponse,summary= "blog generation")
+async def generate_content(user_name: str = Body(...), raw_text: str = Body(...)):
+    print("request: ",user_name,len(raw_text))
+    # 这里可以添加更复杂的逻辑，例如数据库查询、文本生成等
+    time.sleep(5)
+    generated_content = {
+        "status": "success",
+        "message": f"Hello, {user_name}!\n\n {raw_text}"
+    }
+    print("success: ",user_name,len(raw_text))
+    return ORJSONResponse(content=generated_content, status_code=200)
+
+
+
+@app.post("/speech_test/",response_class=ORJSONResponse,summary= "blog generation")
+async def generate_content(user_name: str = Body(...), raw_text: str = Body(...)):
+    print("request: ",user_name,len(raw_text))
+    # 这里可以添加更复杂的逻辑，例如数据库查询、文本生成等
+    time.sleep(5)
+    generated_content = {
+        "status": "success",
+        "message": f"Hello, {user_name}!\n\n {raw_text}"
+    }
+    print("success: ",user_name,len(raw_text))
+    return ORJSONResponse(content=generated_content, status_code=200)
+
+
+@app.post("/recommend_test/",response_class=ORJSONResponse,summary= "blog generation")
+async def generate_content(user_name: str = Body(...), raw_text: str = Body(...)):
+    print("request: ",user_name,len(raw_text))
+    # 这里可以添加更复杂的逻辑，例如数据库查询、文本生成等
+    time.sleep(5)
+    generated_content = {
+        "status": "success",
+        "message": [{'title': 'Clarity of Objectives and Central Theme', 'score': 9, 'comments': 'The paper presents its objectives and central theme with high clarity, specifically focusing on the concept of cyclical learning rates (CLR) for neural network training. The significance and innovation of CLR are well-articulated, and the research questions are clearly defined.', 'avgscore': 8.19}, {'title': 'Appropriateness and Accuracy of Methods', 'score': 8, 'comments': 'The methods used, including the CLR strategy and various experiments conducted across different datasets and architectures, are appropriate and accurately described. They align well with the research objectives. However, a full score is withheld as the paper could benefit from more detailed justification for the chosen methods.', 'avgscore': 8.06}, {'title': 'Authenticity and Accuracy of Data and Findings', 'score': 8, 'comments': "Data and findings appear to be authentic and accurate, with empirical experiments supporting the claims made about CLR's efficacy. The paper makes a strong case for the reliability of its results through comparative analysis.", 'avgscore': 9.88}, {'title': 'Depth of Analysis and Conclusiveness', 'score': 7, 'comments': 'The analysis presented is thorough, leading to well-supported conclusions about the benefits of CLR. However, the paper acknowledges limitations and suggests areas for future research, indicating that while the conclusions are robust, they are not entirely conclusive for all architectures or scenarios.', 'avgscore': 7.56}, {'title': 'Overall Writing Quality', 'score': 8, 'comments': 'The excerpt provided demonstrates clear and concise writing with a well-structured abstract and conclusion. The language is academic and appropriate for the field, explaining complex concepts in an accessible manner. The paper effectively summarizes the research findings and their implications, suggesting further avenues for research. However, without the full paper, it is difficult to judge the consistency of quality throughout the entire document.', 'avgscore': 8.12}, {'title': 'Overall Score', 'score': 8.0, 'avgscore': 7.99}]
+    }
+    print("success: ",user_name,len(raw_text))
+    return ORJSONResponse(content=generated_content, status_code=200)
