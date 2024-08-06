@@ -147,6 +147,10 @@ MMAPIS/
 1. Install the require python libraries
 
    ```bash
+   $ git clone https://github.com/fjiangAI/MMAPIS.git
+   $ cd MMAPIS
+   $ conda create -n MMAPIS python=3.10 -y
+   $ conda activate MMAPIS
    $ chmod +x install.sh
    $ ./install.sh
    ```
