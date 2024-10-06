@@ -1,0 +1,20 @@
+cookie:
+  expiry_days: 30
+  key: some_signature_key
+  name: some_cookie_name
+credentials:
+  usernames:
+    <your_username>:
+      email: <your_email>
+      failed_login_attempts: 0
+      logged_in: false
+      name: <your_full_name>
+      password: <your_hashed_password>
+    <another_username>:
+      email: <another_email>
+      logged_in: false
+      name: <another_full_name>
+      password: <another_hashed_password>
+pre-authorized:
+  emails:
+  - <pre_authorized_email>
