@@ -4,7 +4,7 @@
 
 - \[10/06/2024]: ***Release Version Update***:
      - Optimized code structure for easier comprehension and secondary development.
-     - Introduced a [video demo](#📏Demo) to enhance understanding of MMAPIS functionalities and usage.
+     - Introduced a [video demo](#Demo) to enhance understanding of MMAPIS functionalities and usage.
 - \[08/06/2024]: *New Pre-Release Version*:
      - **Middle-End Services Added:** This version introduces middle-end services, allowing the file system, API service, and front-end system to operate independently.
      - **Optimized Interactive Experience:** Enhancements have been made to improve the user interaction across all applications.
@@ -27,8 +27,31 @@
 
 
 # TOC
+- [The repository for Bridging Research and Readers: A Multi-Modal Automated Academic Papers Interpretation System](#the-repository-for-bridging-research-and-readers-a-multi-modal-automated-academic-papers-interpretation-system)
+- [✨ Latest News](#-latest-news)
+- [TODO List](#todo-list)
+- [TOC](#toc)
+- [⚡ Introduction](#-introduction)
+- [🎯 MMAPIS Architecture](#-mmapis-architecture)
+  - [1. Hybrid Modality Preprocessing and Alignment Module](#1-hybrid-modality-preprocessing-and-alignment-module)
+  - [2. Hierarchical Discourse-Aware Summarization Module](#2-hierarchical-discourse-aware-summarization-module)
+  - [3. Diverse Multimodal User Interface Module](#3-diverse-multimodal-user-interface-module)
+- [Demo](#demo)
+- [📚 Evalution](#-evalution)
+- [📋Project Framework](#project-framework)
+- [🚀How to Run](#how-to-run)
+  - [Installation Guide](#installation-guide)
+    - [Before Installing Dependent Libraries](#before-installing-dependent-libraries)
+    - [Backend](#backend)
+    - [Middleware](#middleware)
+    - [Client](#client)
+  - [Run End-to-End](#run-end-to-end)
+  - [Run with Three Servers](#run-with-three-servers)
+- [Acknowledgement](#acknowledgement)
+- [📩 Contact](#-contact)
+- [Citation](#citation)
 
-[TOC]
+
 
 
 
@@ -53,7 +76,7 @@ In this module, we tackle the complexity of summarizing long documents through a
 ## 3. Diverse Multimodal User Interface Module
 Our Diverse Multimodal User Interface Module, built on a Streamlit-based interface, offers four distinct applications tailored for various user needs, based on the Hierarchical Discourse-Aware Summarization Module's output. The module includes a Paper Recommendation feature that evaluates research papers on multiple dimensions using LLM prompts, focusing on both summary and original text for a comprehensive assessment. A Multimodal Q&A feature enhances traditional Q&A by integrating queries about visual elements in papers, leveraging GPT models for precise responses. An Audio Broadcasting option converts summaries into easily digestible audio formats, ideal for quick information consumption, utilizing advanced text-to-speech technology. Lastly, an Interpretation Blog tool transforms summaries into detailed, reader-friendly blogs, offering in-depth exploration and understanding of the papers. This module effectively combines textual and visual data, ensuring a versatile and user-centric experience in engaging with research content.
 
-# 📏Demo
+# Demo
 
 We provide two versions of the demo video that showcase what our system can do and how to use it:
 
@@ -80,8 +103,8 @@ We provide two versions of the demo video that showcase what our system can do a
 
 	To demonstrate the quality of our system, we present two downstream use cases. These examples are based on the PDF of [*Attention Is All You Need*](https://arxiv.org/pdf/1706.03762.pdf) as the core source material:
 
-	- [*Blog Generation*](./example/Attention Is All You Need_blog.md)
-	- [*Speech Generation*](./example/Attention Is All You Need_speech.md)
+	- [*Blog Generation*](./example/Attention_Is_All_You_Need_blog.md)
+	- [*Speech Generation*](./example/Attention_Is_All_You_Need_speech.md)
 
 
 
