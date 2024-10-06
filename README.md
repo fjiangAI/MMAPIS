@@ -4,7 +4,7 @@
 
 - \[10/06/2024]: ***Release Version Update***:
      - Optimized code structure for easier comprehension and secondary development.
-     - Introduced a [video demo](#Demo) to enhance understanding of MMAPIS functionalities and usage.
+     - Introduced a [video_demo](#Demo) to enhance understanding of MMAPIS functionalities and usage.
 - \[08/06/2024]: *New Pre-Release Version*:
      - **Middle-End Services Added:** This version introduces middle-end services, allowing the file system, API service, and front-end system to operate independently.
      - **Optimized Interactive Experience:** Enhancements have been made to improve the user interaction across all applications.
@@ -82,21 +82,33 @@ We provide two versions of the demo video that showcase what our system can do a
 
 - **English Version:**
 
-<figure>
-  <iframe width="1000" height="750" src="./example/MMAPIS_demo_en.mp4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-  <figcaption>
-    <p style="text-align:center; font-size:14px; color:#333;">MMAPIS demo</p>
-  </figcaption>
-</figure>
+[![MMAPIS demo](https://img.youtube.com/vi/x9f8tKKOE7s/0.jpg)](https://www.youtube.com/watch?v=x9f8tKKOE7s)
+
+<details>
+  <summary>If you've cloned this repository locally, expand here to watch</summary>
+	<figure>
+	  <iframe width="1000" height="750" src="./example/MMAPIS_demo_en.mp4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+	  <figcaption>
+	    <p style="text-align:center; font-size:14px; color:#333;">MMAPIS demo</p>
+	  </figcaption>
+	</figure>
+</details>
+
 
 - **中文版本:**
 
-<figure>
-  <iframe width="1000" height="750" src="./example/MMAPIS_demo_zh.mp4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-  <figcaption>
-    <p style="text-align:center; font-size:14px; color:#333;">中文版MMAPIS介绍</p>
-  </figcaption>
-</figure>
+[![中文版MMAPIS介绍](https://img.youtube.com/vi/EtN6x20WGiw/0.jpg)](https://www.youtube.com/watch?v=EtN6x20WGiw)
+
+<details>
+  <summary>如果您已克隆此仓库到本地，展开此观看</summary>
+  <figure>
+    <iframe width="1000" height="750" src="./example/MMAPIS_demo_zh.mp4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    <figcaption>
+      <p style="text-align:center; font-size:14px; color:#333;">中文版MMAPIS介绍</p>
+    </figcaption>
+  </figure>
+</details>
+
 
 
 - Application Examples
