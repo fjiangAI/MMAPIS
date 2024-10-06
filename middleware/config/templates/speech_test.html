@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Research Digest: A Morning Briefing Broadcast</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script> <!-- Full jQuery version -->
+  <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'a']
+      },
+      loader: {load: ['[tex]/html']}
+    };
+  </script>
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2c3e50;
+      --background-color: #ecf0f1;
+      --text-color: #34495e;
+      --card-bg: #ffffff;
+      --hover-color: #2980b9;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+    }
+
+    .container {
+      max-width: 1000px;
+    }
+    .col-lg-10 {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-body {
+      padding: 2rem;
+      height: 90vh;
+    }
+
+    h2 {
+      color: var(--secondary-color);
+      font-weight: bold;
+    }
+
+    .form-control {
+      border-radius: 10px;
+    }
+
+    .btn {
+      border-radius: 10px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--hover-color);
+      border-color: var(--hover-color);
+    }
+
+    .btn-success {
+      background-color: #27ae60;
+      border-color: #27ae60;
+    }
+
+    .btn-success:hover {
+      background-color: #2ecc71;
+      border-color: #2ecc71;
+    }
+
+    #text-content {
+      min-height: 60vh;
+    }
+
+    #audio-player {
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    #loading-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .loading-content {
+      text-align: center;
+      background-color: var(--card-bg);
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    #loading-text {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: var(--text-color);
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 5px;
+      background-color: #e0e0e0;
+    }
+
+    .progress-bar {
+      background-color: var(--primary-color);
+      transition: width 0.5s ease;
+    }
+
+    #time-info {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-color);
+    }
+
+    .content-container {
+      display: none;
+      max-width: 80vw;
+    }
+
+    .icon-spin {
+      animation: spin 1s infinite linear;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-wrapper">
+    <div class="loading-content">
+      <div id="loading-text">
+        <i class="fas fa-sync icon-spin"></i> Loading Speech content, please wait...
+      </div>
+      <div class="progress">
+        <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+      </div>
+      <div id="time-info">Elapsed time: <span id="elapsed-time">0</span>s / Estimated time: <span id="estimated-time">15</span>s</div>
+    </div>
+  </div>
+
+  <div class="container mt-5 content-container">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h2 class="text-center mb-4">Scholarly Briefing Script</h2>
+            
+            <div class="form-group mb-4">
+              <textarea id="text-content" class="form-control" rows="15" placeholder="Enter your text here..."></textarea>
+            </div>
+            
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <button class="btn btn-primary btn-block" onclick="downloadText()">
+                  <i class="fas fa-download mr-2"></i> Download Text
+                </button>
+              </div>
+              <div class="col-md-6">
+                <button class="btn btn-success btn-block" onclick="generateAudio()">
+                  <i class="fas fa-microphone mr-2"></i> Generate Audio
+                </button>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="model-select">Select TTS Model:</label>
+              <select id="model-select" class="form-control">
+                <option value="openai">OpenAI</option>
+                <option value="youdao">Youdao</option>
+              </select>
+            </div>
+            
+            <div class="mt-4">
+              <h4>Audio Preview</h4>
+              
+              <audio id="audio-player" controls>
+                <source src="" type="audio/mp3">
+                Your browser does not support the audio element.
+              </audio>
+              <button class="btn btn-secondary btn-block mt-3" onclick="downloadAudio()" disabled id="download-audio-btn">
+                <i class="fas fa-file-audio mr-2"></i> Download Audio
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script id="section_level_summary" type="text/plain" style="display: none;">
+  {{section_level_summary}}
+  </script>
+  
+  <script id="document_level_summary" type="text/plain" style="display: none;">
+  {{document_level_summary}}
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    var converter = new showdown.Converter();
+    var interval;
+    var estimatedTime = 15; // 15 seconds
+
+    function startLoadingAnimation() {
+      let startTime = Date.now();
+
+      interval = setInterval(function() {
+        let elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+        $("#elapsed-time").text(elapsedTime);
+        $("#estimated-time").text(Math.max(estimatedTime - elapsedTime, 0));
+
+        let progress = Math.min((elapsedTime / estimatedTime) * 100, 100);
+        $("#progress-bar").css("width", progress + "%");
+
+        if (elapsedTime >= estimatedTime) {
+          document.getElementById("loading-text").innerHTML = '<i class="fas fa-cog fa-spin"></i> Finalizing audio, please wait...';
+          clearInterval(interval);
+        }
+      }, 1000);
+    }
+
+    function requestSpeechContent() {
+      const document_level_summary = document.getElementById('document_level_summary').textContent;
+      const section_level_summary = document.getElementById('section_level_summary').textContent;
+      const api_key = "{{api_key}}";
+      const base_url = "{{base_url}}";
+      const prompts = {{prompts}};
+      const summarizer_params = {{summarizer_params}};
+
+      var speechRequest = {
+        "document_level_summary": document_level_summary,
+        "section_level_summary": section_level_summary,
+        "llm_api_key": api_key,
+        "llm_base_url": base_url,
+        "prompts": prompts,
+        "summarizer_params": summarizer_params,
+        "user_id": "{{user_id}}",
+        "file_id": "{{file_id}}",
+        "request_id": "{{request_id}}",
+      };
+
+      startLoadingAnimation();
+
+      fetch('{{backend_url}}/broadcast_generation/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(speechRequest),
+      })
+      .then(response => response.json())
+      .then(data => {
+        $("#loading-wrapper").fadeOut(500, function() {
+          $(this).remove();
+        });
+        clearInterval(interval);
+        $(".content-container").fadeIn(500);
+
+        document.getElementById('text-content').value = data.message;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to load speech content. ' + error + ' Please try again.');
+        $("#loading-wrapper").fadeOut(500, function() {
+          $(this).remove();
+        });
+        $(".content-container").fadeIn(500);
+      });
+    }
+
+    function downloadText() {
+      var text = document.getElementById('text-content').value;
+      var blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+      var link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = 'scholarly_briefing_script.txt';
+      link.click();
+    }
+    
+    function generateAudio() {
+      var text = document.getElementById('text-content').value;
+      var model = document.getElementById('model-select').value;
+
+      var tts_request = {
+        "model": model,
+        "text": text,
+        "user_id": "{{user_id}}",
+      };
+
+      $("#loading-wrapper").show();
+      $("#loading-text").html('<i class="fas fa-music icon-spin"></i> Generating audio, please wait...');
+      startLoadingAnimation();
+
+      fetch('{{backend_url}}/tts/{{user_id}}/{{file_id}}/{{request_id}}/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tts_request),
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        var audioPlayer = document.getElementById('audio-player');
+        audioPlayer.src = data.message;
+        document.getElementById('download-audio-btn').disabled = false;
+        $("#loading-wrapper").fadeOut(500);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to generate audio. Please try again.');
+        $("#loading-wrapper").fadeOut(500);
+      });
+    }
+    
+    function downloadAudio() {
+      var audioSrc = document.getElementById('audio-player').src;
+      if (audioSrc) {
+        var link = document.createElement('a');
+        link.href = audioSrc;
+        link.download = 'scholarly_briefing_audio.mp3';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        alert('No audio available for download');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      requestSpeechContent();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal QA System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/lib/marked.min.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'a']
+            },
+            loader: {load: ['[tex]/html']}
+        };
+    </script>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #2c3e50;
+            --background-color: #f5f7fa;
+            --text-color: #333;
+            --sidebar-width: 15vw;
+            --sidebar-collapsed-width: 60px;
+            --qa-section-width: 30vw;
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--secondary-color);
+            color: #fff;
+            transition: all var(--transition-speed);
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        #sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        #sidebar .sidebar-header {
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        #sidebar ul.components {
+            padding: 20px 0;
+        }
+
+        #sidebar ul li a {
+            padding: 10px 20px;
+            font-size: 1rem;
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all var(--transition-speed);
+        }
+
+        #sidebar ul li a:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #sidebar .sidebar-toggler {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 1.5rem;
+            z-index: 2;
+        }
+
+        #sidebar-resizer {
+            width: 5px;
+            cursor: col-resize;
+            background-color: rgba(255, 255, 255, 0.1);
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        #main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #article-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        #qa-section {
+            width: var(--qa-section-width);
+            background-color: #f0f4f8;
+            border-left: 1px solid #d1d9e6;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+        }
+
+        .dialog {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .message-content {
+            background-color: #ffffff;
+            border-radius: 18px;
+            padding: 12px 16px;
+            max-width: 70%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .user .message-content {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 20px;
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #d1d9e6;
+            border-radius: 20px;
+            resize: none;
+            font-size: 1rem;
+        }
+
+        #send-button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color var(--transition-speed);
+        }
+
+        #send-button:hover {
+            background-color: #3a7bc8;
+        }
+
+        #send-button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .markdown-body {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        .markdown-body h1 {
+            font-size: 2em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: .3em;
+        }
+
+        .markdown-body h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: .3em;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.25em;
+        }
+
+        .markdown-body a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .markdown-body a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+
+        .markdown-body code {
+            background-color: rgba(27,31,35,.05);
+            border-radius: 3px;
+            font-size: 85%;
+            margin: 0;
+            padding: .2em .4em;
+        }
+
+        #welcome-message {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-top: 50%;
+            transform: translateY(-50%);
+        }
+
+        #user-guide-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+
+        #user-guide-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        #user-guide-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.1);
+        }
+
+        .user-guide-tooltip {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            padding: 15px;
+            font-size: 14px;
+            color: #333;
+            z-index: 1001;
+        }
+
+        .user-guide-tooltip h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+
+        .user-guide-tooltip ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .user-guide-tooltip li {
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .user-guide-tooltip small {
+            color: #666;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .user-guide-tooltip::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 13px;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid white;
+        }
+
+        .user-guide-tooltip.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <script id="raw_md_text" type="text/plain" style="display: none;">
+{{raw_md_text}}
+    </script>
+
+    <script id="document_level_summary" type="text/plain" style="display: none;">
+{{document_level_summary}}
+    </script>
+
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h3>Contents</h3>
+            <span class="sidebar-toggler"><i class="fas fa-bars"></i></span>
+        </div>
+        <ul class="components">
+            <!-- Table of contents will be generated here -->
+        </ul>
+        <div id="sidebar-resizer"></div>
+    </nav>
+
+    <div id="main-content">
+        <div id="article-container" class="markdown-body">
+            <!-- Markdown content will be placed here -->
+        </div>
+        <div id="qa-section">
+            <div id="user-guide-container">
+                <button id="user-guide-button" aria-label="How to use">
+                    <i class="fas fa-question-circle"></i>
+                </button>
+                <div id="user-guide-tooltip" class="user-guide-tooltip">
+                    <h4>User Inquiry Guidelines</h4>
+                    <ul>
+                        <li>Inquiries about Specific Chapters: Clearly specify the chapter reference.<br>
+                            <small>Example: What is the main content of Chapter 2?</small></li>
+                        <li>Inquiries regarding Image Content: Clearly indicate the image reference.<br>
+                            <small>Example: What is the main content of Image 0 in Chapter 2?</small></li>
+                        <li><small>Note: Image references should be based on the text located below the image, rather than the internal numbering within the image.</small></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="dialog" id="messages">
+                <div id="welcome-message">
+                    Welcome to the Multimodal QA System! Feel free to ask any questions about the document.
+                </div>
+            </div>
+            <div class="input-area">
+                <textarea id="user-input" placeholder="Type your question here..." rows="1"></textarea>
+                <button id="send-button" onclick="sendMessage()">
+                    <span id="send-icon"><i class="fas fa-paper-plane"></i></span>
+                    <span id="loading-spinner" class="spinner" style="display: none;"></span>
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userGuideButton = document.getElementById('user-guide-button');
+            const userGuideTooltip = document.getElementById('user-guide-tooltip');
+
+            userGuideButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userGuideTooltip.classList.toggle('show');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!userGuideTooltip.contains(e.target) && e.target !== userGuideButton) {
+                    userGuideTooltip.classList.remove('show');
+                }
+            });
+
+            // 添加淡入效果
+            userGuideButton.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.1)';
+            });
+
+            userGuideButton.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+        var chatHistory = [];
+        var multimodalQARequest = {
+            api_key: "{{api_key}}",
+            base_url: "{{base_url}}",
+            user_input: "default user input",
+            document_level_summary: document.getElementById('document_level_summary').textContent,
+            session_message: chatHistory,
+            raw_md_text: document.getElementById('raw_md_text').textContent,
+            user_id: "{{user_id}}",
+            file_id: "{{file_id}}",
+            request_id: "{{request_id}}",
+        };
+
+        marked.setOptions({
+            breaks: true,
+            pedantic: false,
+            smartLists: true,
+            smartypants: false
+        });
+
+        var markdownContent = document.getElementById('document_level_summary').textContent;
+        var html = marked(markdownContent);
+        document.getElementById('article-container').innerHTML = html;
+
+        function generateTableOfContents() {
+            var headings = document.querySelectorAll('#article-container h1, #article-container h2, #article-container h3');
+            var toc = '';
+            var currentLevel = 0;
+            var globalCounter = 0;
+
+            headings.forEach(function (heading) {
+                var level = parseInt(heading.tagName.charAt(1));
+                var text = heading.textContent;
+                var id = 'heading-' + globalCounter;
+                heading.id = id;
+
+                var numberedText = `${globalCounter }. ${text}`;
+                globalCounter++;
+
+                heading.textContent = numberedText;
+
+                if (level > currentLevel) {
+                    toc += '<ul>';
+                } else if (level < currentLevel) {
+                    toc += '</li></ul>'.repeat(currentLevel - level);
+                    toc += '</li>';
+                } else if (currentLevel > 0) {
+                    toc += '</li>';
+                }
+
+                toc += `<li><a href="#${id}">${numberedText}</a>`;
+                currentLevel = level;
+            });
+
+            toc += '</li></ul>'.repeat(currentLevel);
+            document.querySelector('#sidebar ul.components').innerHTML = toc;
+        }
+
+        generateTableOfContents();
+
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggler = sidebar.querySelector('.sidebar-toggler');
+        const sidebarResizer = document.getElementById('sidebar-resizer');
+
+        sidebarToggler.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        let isResizing = false;
+        let lastDownX = 0;
+
+        sidebarResizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            lastDownX = e.clientX;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
+            const minWidth = 100;
+            const maxWidth = 600;
+
+            if (offsetRight > minWidth && offsetRight < maxWidth) {
+                sidebar.style.width = offsetRight + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            isResizing = false;
+        });
+
+        function sendMessage() {
+            const userInput = document.getElementById('user-input').value;
+            if (userInput.trim() === '') return;
+
+            document.getElementById('welcome-message').style.display = 'none';
+
+            addMessageToDialog('user', userInput);
+            document.getElementById('user-input').value = '';
+            multimodalQARequest.user_input = userInput;
+
+            document.getElementById('user-input').disabled = true;
+            document.getElementById('send-button').disabled = true;
+            document.getElementById('send-icon').style.display = 'none';
+            document.getElementById('loading-spinner').style.display = 'inline-block';
+
+            fetch('{{backend_url}}/Multimodal_qa/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(multimodalQARequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessageToDialog('assistant', data.message);
+                chatHistory.push({role: 'user', content: userInput});
+                chatHistory.push({role: 'assistant', content: data.message});
+            })
+            .catch(error => {
+                console.error(error);
+                addMessageToDialog('assistant', 'Sorry, an error occurred while processing your request.');
+            })
+            .finally(() => {
+                document.getElementById('user-input').disabled = false;
+                document.getElementById('send-button').disabled = false;
+                document.getElementById('send-icon').style.display = 'inline-block';
+                document.getElementById('loading-spinner').style.display = 'none';
+            });
+        }
+
+        function addMessageToDialog(sender, message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+
+            const avatarImg = document.createElement('img');
+            avatarImg.classList.add('avatar');
+            avatarImg.src = `/index/img/${sender}.png`;
+            avatarImg.alt = sender;
+            messageDiv.appendChild(avatarImg);
+
+            const messageContent = document.createElement('div');
+            messageContent.classList.add('message-content');
+            messageContent.innerHTML = marked(message);
+            messageDiv.appendChild(messageContent);
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            MathJax.typesetPromise();
+        }
+
+        const renderer = new marked.Renderer();
+        renderer.link = function (href, title, text) {
+            const link = marked.Renderer.prototype.link.call(this, href, title, text);
+            return link.replace("<a", "<a target='_blank' rel='noopener noreferrer'");
+        }
+        marked.setOptions({
+            renderer: renderer,
+            breaks: true
+        });
+
+        document.getElementById("user-input").addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-resize textarea
+        const userInput = document.getElementById('user-input');
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        MathJax.typesetPromise();
+    </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Research Paper Interpretation Blog</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/lib/marked.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+      window.MathJax = {
+          tex: {
+              inlineMath: [['$', '$'], ['\\(', '\\)']],
+              displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          },
+          options: {
+              skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'a']
+          },
+          loader: {load: ['[tex]/html']}
+      };
+    </script>
+    <style>
+        /* 美化进度条 */
+        .loading-progress-wrapper {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50%;
+            text-align: center;
+            z-index: 9999;
+        }
+        .loading-progress {
+            height: 10px;
+            background-color: #007bff;
+            border-radius: 5px;
+            animation: progress 20s linear forwards;
+        }
+
+        .progress-time {
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        @keyframes progress {
+            from { width: 0%; }
+            to { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<script id="raw_text" type="text/plain" style="display: none;">
+  ## introduction\n jdiosjdioasjdoiasjdoi\n\b## hi\n there
+</script>
+<script id="article" type="text/plain" style="display: none;">
+{{text}}
+</script>
+<div class="container-fluid">
+    <div id="content-wrapper"> <!-- Add this wrapper -->
+        <div class="resizable border-right pt-5 pl-3" id="table-of-contents">
+           <!-- automatically generated table of contents will be placed here -->
+        </div>
+        <div class="resizable2 pt-5">
+            <div id="blog-post-content" class="markdown-body">
+                <!-- Markdown content will be placed here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$( function() {
+  // Display loading progress bar
+  $("body").prepend(`
+    <div class="loading-progress-wrapper">
+        <div class="loading-progress"></div>
+        <div class="progress-time">
+            <span id="elapsed-time">0s</span> / <span id="estimated-time">20s</span>
+        </div>
+    </div>
+  `);
+
+  let startTime = Date.now();
+  let estimatedTime = 20; // 20 seconds
+  let interval = setInterval(function() {
+      let elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+      $("#elapsed-time").text(elapsedTime + "s");
+  }, 1000);
+
+  // Get the backend URL and parameters
+  const backendUrl = "http://127.0.0.1:8000/blog_test/";
+  const userName = "KKKe"; // Replace with actual user name
+  const rawText = document.getElementById('raw_text').innerHTML;  // Use innerHTML for full content
+
+  // Request blog content from the backend
+  $.ajax({
+    url: backendUrl,
+    type: "POST",
+    data: {
+      user_name: userName,
+      raw_text: rawText
+    },
+    success: function(response) {
+      // Remove the loading progress bar
+      $(".loading-progress-wrapper").remove();
+      clearInterval(interval);
+
+      let blogContent = response.message;
+      // Set the new blog content
+      document.getElementById('article').textContent = blogContent;
+
+      // Generate table of contents
+      function generateTableOfContents(markdown) {
+        let toc = "<ul>", tocDepth = 0;
+        const headers = markdown.match(/^#+\s.*$/gm);
+
+        if (headers) {
+          headers.forEach(header => {
+            let headerLevel = header.match(/^#+/g)[0].length;
+            let headerText = header.replace(/^#+\s/, "");
+            const anchor = headerText.toLowerCase().replace(/\s+/g, "-");
+            markdown = markdown.replace(header, `<a id="${anchor}"></a>\n\n${header}`);
+
+            while (tocDepth < headerLevel) {
+              toc += "<ul>";
+              tocDepth++;
+            }
+
+            while (tocDepth > headerLevel) {
+              toc += "</ul>"
+              tocDepth--;
+            }
+
+            toc += `<li class="toc-level-${headerLevel}"><a href="#${anchor}">${headerText}</a></li>`;
+          });
+
+          while (tocDepth > 0) {
+            toc += "</ul>"; 
+            tocDepth--;      
+          }
+        }
+
+        document.getElementById("table-of-contents").innerHTML += toc;
+        return markdown;
+      }
+
+      // Update the blog post content
+      document.getElementById('blog-post-content').innerHTML = marked(generateTableOfContents(blogContent));
+
+      // MathJax typeset
+      MathJax.typesetPromise();
+    },
+    error: function(error) {
+      // Handle errors
+      console.error("Error fetching blog content:", error);
+      // Optionally display an error message to the user
+      alert("There was an error fetching the blog content. Please try again later.");
+      clearInterval(interval);
+    }
+  });
+
+  // Enable resizing functionality
+  $(".resizable").resizable({
+      handles: 'e',
+      alsoResize: ".resizable2",
+  });
+  $(".resizable2").resizable({
+      handles: 'w',
+      alsoResize: ".resizable",
+  });
+} );
+</script>
+
+</body>
+</html>

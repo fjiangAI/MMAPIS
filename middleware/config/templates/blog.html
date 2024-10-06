@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Blog Generation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/lib/marked.min.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'a']
+            },
+            loader: {load: ['[tex]/html']}
+        };
+    </script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --background-color: #ecf0f1;
+            --text-color: #34495e;
+            --toc-background: #f8f9fa;
+            --content-background: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        #loading-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        #loading-text {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+        }
+
+        #progress-bar {
+            width: 60%;
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #progress-bar-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 5px;
+        }
+
+        #time-info {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: var(--text-color);
+        }
+
+        #content-wrapper {
+            display: grid;
+            grid-template-columns: minmax(250px, 25%) 10px 1fr;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #table-of-contents {
+            background-color: var(--toc-background);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #table-of-contents ul {
+            padding-left: 20px;
+            list-style-type: none;
+        }
+
+        #table-of-contents li {
+            margin-bottom: 10px;
+        }
+
+        #table-of-contents a {
+            color: var(--text-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        #table-of-contents a:hover {
+            color: var(--primary-color);
+        }
+
+        #resizer {
+            background-color: #ddd;
+            cursor: col-resize;
+            transition: background-color 0.3s ease;
+        }
+
+        #resizer:hover {
+            background-color: var(--primary-color);
+        }
+
+        #content-area {
+            background-color: var(--content-background);
+            padding: 30px;
+            overflow-y: auto;
+        }
+        h1::before {
+            content: "H1 - ";
+            color: #888;
+            font-size: 0.3em;
+        }
+
+        h2::before {
+            content: "H2 - ";
+            color: #888;
+            font-size: 0.3em;
+        }
+
+        h3::before {
+            content: "H3 - ";
+            color: #888;
+            font-size: 0.3em;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #123456;
+            border-bottom: 2px solid #123456;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            padding-bottom: 0.3em;
+        }
+
+        h2 {
+            font-size: 2em;
+            font-weight: bold;
+            color: #123456;
+            border-bottom: 2px solid #123456;
+            margin-top: 0.8em;
+            margin-bottom: 0.4em;
+            padding-bottom: 0.2em;
+        }
+
+        h3 {
+            font-size: 1.75em;
+            font-weight: bold;
+            color: #123456;
+            margin-top: 0.7em;
+            margin-bottom: 0.35em;
+        }
+
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+
+        .markdown-body {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .markdown-body p {
+            margin-bottom: 1.5em;
+        }
+
+        .markdown-body img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 1.5em auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .markdown-body blockquote {
+            border-left: 4px solid var(--primary-color);
+            padding-left: 1em;
+            margin-left: 0;
+            font-style: italic;
+            color: #555;
+        }
+
+        .markdown-body code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .markdown-body pre {
+            background-color: #f4f4f4;
+            padding: 1em;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            #content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            #table-of-contents {
+                display: none;
+            }
+
+            #resizer {
+                display: none;
+            }
+        }
+
+
+        .save-markdown-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .save-markdown-button:hover {
+            background-color: #45a049;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .save-markdown-button:active {
+            background-color: #3e8e41;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transform: translateY(2px);
+        }
+        .save-markdown-button.clicked {
+            animation: pulse 0.5s;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <script id="section_level_summary" type="text/plain" style="display: none;">
+        {{section_level_summary}}
+    </script>
+
+    <script id="document_level_summary" type="text/plain" style="display: none;">
+        {{document_level_summary}}
+    </script>
+
+    <script id="raw_md_text" type="text/plain" style="display: none;">
+        {{raw_md_text}}
+    </script>
+
+    <script id="article" type="text/plain" style="display: none;">
+{{text}}
+    </script>
+
+    <div id="loading-wrapper">
+        <div id="loading-text">
+            <i class="fas fa-sync fa-spin"></i> Generating academic blog...
+        </div>
+        <div id="progress-bar">
+            <div id="progress-bar-fill"></div>
+        </div>
+        <div id="time-info">Elapsed time: <span id="elapsed-time">0</span>s / Estimated time: 30s</div>
+    </div>
+
+    <div id="content-wrapper">
+        <div id="table-of-contents"></div>
+        <div id="resizer"></div>
+        <div id="content-area">
+            <div id="blog-post-content" class="markdown-body"></div>
+        </div>
+    </div>
+
+    <script>
+        $(function() {
+            let startTime = Date.now();
+            let estimatedTime = 30; // 30 seconds
+            let interval = setInterval(function() {
+                let elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                $("#elapsed-time").text(elapsedTime);
+
+                let percentage = Math.min((elapsedTime / estimatedTime) * 100, 100);
+                $("#progress-bar-fill").css("width", percentage + "%");
+
+                if (elapsedTime >= estimatedTime) {
+                    document.getElementById("loading-text").innerHTML = '<i class="fas fa-cog fa-spin"></i> Finalizing blog, please wait...';
+                    clearInterval(interval);
+                }
+            }, 1000);
+
+            const Blog_Request = {
+                api_key: "{{api_key}}",
+                base_url: "{{base_url}}",
+                document_level_summary: document.getElementById('document_level_summary').textContent,
+                section_level_summary: document.getElementById('section_level_summary').textContent,
+                pdf: "{{pdf}}",
+                raw_md_text: document.getElementById('raw_md_text').textContent,
+                min_grained_level: {{min_grained_level}},
+                max_grained_level: {{max_grained_level}},
+                img_width: {{img_width}},
+                blog_prompts: {{prompts}},
+                summarizer_params: {{summarizer_params}},
+                user_id: "{{user_id}}",
+                file_id: "{{file_id}}",
+                request_id: "{{request_id}}",
+            };
+
+            fetch('{{backend_url}}/blog_generation/{{user_id}}/{{file_id}}/{{request_id}}/', {
+                method: 'POST',
+                body: JSON.stringify(Blog_Request),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                $("#loading-wrapper").remove();
+                clearInterval(interval);
+
+                let blogContent = data.message;
+                document.getElementById('article').textContent = blogContent;
+
+                function generateTableOfContents(markdown) {
+                    let toc = "<ul>", tocDepth = 0, headerCounter = 0;
+                    const headers = markdown.match(/^#+\s.*?$/gm);
+
+                    if (headers) {
+                        headers.forEach(header => {
+                            let headerLevel = header.match(/^#+/g)[0].length;
+                            let headerText = header.replace(/^#+\s/, "");
+                            const anchor = headerText.toLowerCase().replace(/\s+/g, "-");
+                            let numberedHeader = `${++headerCounter}. ${headerText}`;
+                            markdown = markdown.replace(header, `<a id="${anchor}"></a>\n\n${"#".repeat(headerLevel)} ${numberedHeader}`);
+
+                            while (tocDepth < headerLevel) {
+                                toc += "<ul>";
+                                tocDepth++;
+                            }
+
+                            while (tocDepth > headerLevel) {
+                                toc += "</ul>"
+                                tocDepth--;
+                            }
+
+                            toc += `<li class="toc-level-${headerLevel}"><a href="#${anchor}">${numberedHeader}</a></li>`;
+                        });
+
+                        while (tocDepth > 0) {
+                            toc += "</ul>"; 
+                            tocDepth--;      
+                        }
+                    }
+                    document.getElementById("table-of-contents").innerHTML = toc;
+                    return markdown;
+                }
+
+                document.getElementById('blog-post-content').innerHTML = marked(generateTableOfContents(blogContent));
+                MathJax.typesetPromise();
+                // Add save button
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.textAlign = 'center';
+                buttonContainer.style.margin = '20px 0';
+                const saveButton = document.createElement('button');
+                saveButton.textContent = 'save as markdown';
+                saveButton.className = 'save-markdown-button';
+                saveButton.onclick = function() {
+                    saveAsMarkdown(blogContent);
+                    this.classList.add('clicked');
+                    setTimeout(() => this.classList.remove('clicked'), 500);
+                };
+                buttonContainer.appendChild(saveButton);
+                document.getElementById('blog-post-content').after(buttonContainer);
+
+            })
+            .catch(error => {
+                console.error("Error fetching blog content:", error);
+                alert("There was an error generating the blog. Please try again later.");
+                clearInterval(interval);
+            });
+
+            // Function to save content as Markdown file
+            function saveAsMarkdown(content) {
+                const blob = new Blob([content], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'blog_content.md';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // Resizable functionality
+            const resizer = document.getElementById('resizer');
+            const leftSide = document.getElementById('table-of-contents');
+            const wrapper = document.getElementById('content-wrapper');
+
+            let x = 0;
+            let leftWidth = 0;
+
+            const mouseDownHandler = function(e) {
+                x = e.clientX;
+                leftWidth = leftSide.getBoundingClientRect().width;
+
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
+            };
+
+            const mouseMoveHandler = function(e) {
+                const dx = e.clientX - x;
+                const newLeftWidth = leftWidth + dx;
+                wrapper.style.gridTemplateColumns = `${newLeftWidth}px 10px 1fr`;
+            };
+
+            const mouseUpHandler = function() {
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+            };
+
+            resizer.addEventListener('mousedown', mouseDownHandler);
+
+            // 双击resizer恢复默认宽度
+            resizer.addEventListener('dblclick', function() {
+                wrapper.style.gridTemplateColumns = 'minmax(250px, 25%) 10px 1fr';
+            });
+        });
+    </script>
+</body>
+</html>

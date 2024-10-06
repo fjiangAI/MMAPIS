@@ -1,0 +1,68 @@
+general:
+  proxy:
+    http: null # Set your HTTP proxy
+    https: null # Set your HTTPS proxy
+    ftp: null # Set your FTP proxy
+    host: null # Set your proxy host
+  headers:
+    "User-Agent": null # Set your User-Agent
+  save_dir: "./res" # Directory to save output files from main.py
+  app_save_dir: "./app_res" # Directory for output files from middleware.py
+  backend_url: "http://127.0.0.1:8000" # Backend server URL
+  allowed_file_types: [".html",".css",".js",".png",".jpg",".jpeg",".pdf",".md"] # Allowed file types in middleware
+  middleware_url: "http://127.0.0.1:8005" # Middleware server URL
+  frontend_url: "http://127.0.0.1:3000" # Frontend server URL
+
+arxiv:
+  key_word: null # Search keyword(s); can be a string, list, or URL. Set null for daily submissions
+  daily_type: "cs"
+  download: false
+  max_return: 2
+
+openai:
+  api_key: "sk-xxx" # TODO: set your api key
+  base_url: "https:/xxxx" # TODO: set your base url, e.g., https://api.openai.com/v1
+  prompts_path:
+    './prompts_config.json' # Path to the prompts configuration file
+  ignore_title: ["reference","appendix","acknowledg"] # Titles to ignore during summarization
+  rpm_limit: 3   # Max requests per minute; 0 means no limit， 3 means max 3 requests per minute
+  num_processes: 6 # Number of parallel processes for requests
+  prompt_ratio: 0.8 # Proportion of max tokens that can be prompt
+  model_config:
+    model: "gpt-4o-mini"  
+    temperature: 1.0 
+    max_tokens: 128000 # Max tokens per request
+    top_p: 1.0
+    frequency_penalty: 0.1
+    presence_penalty: 0.2
+    max_output_tokens: 16384 # Max tokens for each response
+  compression_ratio: 0.4 # Compression ratio for document summarization, avoid the length of the document is too short
+  min_length: 700 # Minimum document length; regenerate if below this
+  json_qa_model: "gpt-3.5-turbo-1106" # Model for JSON generation
+  max_regenerate: 3 # Max regenerations for the document-level summarization
+  img_qa_model: "gpt-4o" # Model for image question answering
+  tts_model: "tts-1" # Model for text-to-speech
+
+
+
+nougat:
+  check_point : "./pretrained_w"  # Path to the pretrained model Noted that path is based on the root of the backend,i.e. "backend/pretrained_w"
+  pdf : ["./exp/dataset/23pdf_selected/2401_08619.pdf"]    # List of PDF paths or directories
+  recompute : true 
+  markdown : true
+
+tts:
+  base_url: "xxx" # Set your TTS base URL (required for Youdao API)
+  api_key: 'xxx' # Set your TTS API key (required for Youdao API)
+  app_secret: "xxx" # Set your app secret (required for Youdao API)
+  model: "openai" # Model for text-to-speech; supports "youdao" or "openai"
+
+alignment:
+  min_grained_level: 3  # Minimum granularity level for aligning images with subtitles, e.g., setting to 3 means images can be aligned with the finest 3rd-level subtitle (### subtitle), the higher the value, the more precise the alignment
+  max_grained_level: 4  # Maximum granularity level for section splitting, e.g., setting to 4 means the article structure can be split into 4th-level subtitles (#### subtitle), the higher the value, the more detailed the structure
+  threshold: 0.9 # Threshold for section title similarity
+  img_width: 300 # Width of images displayed in the frontend
+  margin: 10
+
+
+

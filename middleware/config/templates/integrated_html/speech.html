@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Research Digest: A Morning Briefing Broadcast</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'a']
+      },
+      loader: {load: ['[tex]/html']}
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+    }
+    .container {
+      max-width: 100vh;
+    }
+    .col-md-8.offset-md-2 {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100%;
+    }
+    .text-container {
+      max-height: 60vh;
+      max-width: 80vw;
+      height: 60vh;
+      width: 80vw;
+      overflow: auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    .audio-controls {
+      margin-top: 20px;
+    }
+    #text-content {
+      width: 100%;
+      height: 100%;
+      border: none;
+      resize: none;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+  </style>
+<body class="bg-light">
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h2 class="text-center mb-4">Scholarly Briefing Script</h2>
+            
+            <div class="form-group mb-4 flex-grow-1 d-flex flex-column">
+              <textarea id="text-content" class="form-control" rows="25" placeholder="Enter your text here...">
+                {{text}}
+              </textarea>
+            </textarea>
+          </div>
+          
+          <div class="text-center mb-4">
+            <button class="btn btn-primary" onclick="downloadText()">Download Text</button>
+          </div>
+          
+          <div class="row align-items-end">
+            <div class="col-md-6 mb-3 mb-md-0">
+              <div class="form-group">
+                <label for="model-select">Select TTS Model:</label>
+                <select id="model-select" class="form-control">
+                  <option value="youdao">Youdao</option>
+                  <option value="openai">OpenAI</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="col-md-6 text-md-right">
+              <button class="btn btn-success" onclick="generateAudio()">Generate Audio</button>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <h4>Audio Preview</h4>
+            <audio id="audio-player" class="w-100 mb-2" controls>
+              <source src="" type="audio/mp3">
+              Your browser does not support the audio element.
+            </audio>
+            <div class="text-right">
+              <button class="btn btn-secondary" onclick="downloadAudio()" disabled id="download-audio-btn">Download Audio</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+  
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    var converter = new showdown.Converter();
+    
+    function downloadText() {
+      var text = document.getElementById('text-content').value;
+      var blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+      var link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = 'text.txt';
+      link.click();
+    }
+    
+    function generateAudio() {
+      var text = document.getElementById('text-content').value;
+      var model = document.getElementById('model-select').value;
+      // var api_key = "{{api_key}}";
+      // var base_url = "{{base_url}}";
+      // var secret_key = "{{secret_key}}";
+      var tts_request = {
+        "model": model,
+        "text": text,
+        // "api_key": api_key,
+        // "base_url": base_url,
+        // "app_secret": secret_key
+      }
+
+      // 发送请求到后端API
+      fetch('{{backend_url}}/tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tts_request),
+      })
+      .then(response => response.json())
+      .then(data => {
+        var audioPlayer = document.getElementById('audio-player');
+        audioPlayer.src = data.message;
+        document.getElementById('download-audio-btn').disabled = false;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to generate audio. Please try again.');
+      });
+    }
+    
+    function downloadAudio() {
+      var audioSrc = document.getElementById('audio-player').src;
+      if (audioSrc) {
+        var link = document.createElement('a');
+        link.href = audioSrc;
+        link.download = 'audio.mp3';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        alert('No audio available for download');
+      }
+    }
+  </script>
+</body>
+</html>
