@@ -8,6 +8,7 @@ general:
     "User-Agent": null # Set your User-Agent
   save_dir: "./res" # Directory to save output files from main.py
   app_save_dir: "./app_res" # Directory for output files from middleware.py
+  user_config_path: "./user.yaml"
   backend_url: "http://127.0.0.1:8000" # Backend server URL
   allowed_file_types: [".html",".css",".js",".png",".jpg",".jpeg",".pdf",".md"] # Allowed file types in middleware
   middleware_url: "http://127.0.0.1:8005" # Middleware server URL
