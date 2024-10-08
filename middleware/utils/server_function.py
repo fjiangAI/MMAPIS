@@ -118,7 +118,7 @@ def normalize_header(text: str):
     """
     # Remove extra spaces and newlines
     text = text.replace('\r\n', '\n')
-    pattern = re.compile(r'(?<!#)(#{3,})(?!#)', re.MULTILINE)
+    pattern = re.compile(r'(?<!#)(#{2,})(?!#)', re.MULTILINE)
     text = pattern.sub(r'\n\1', text)
     return text
 
