@@ -18,3 +18,4 @@ starlette==0.38.6
 typing_extensions==4.12.2
 urllib3==2.2.3
 yarl==1.13.1
+orjson==3.10.7
