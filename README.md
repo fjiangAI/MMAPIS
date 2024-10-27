@@ -82,7 +82,7 @@ We provide two versions of the demo video that showcase what our system can do a
 
 - **English Version:**
 
-[![MMAPIS demo](https://img.youtube.com/vi/x9f8tKKOE7s/0.jpg)](https://www.youtube.com/watch?v=x9f8tKKOE7s)
+[![MMAPIS demo](https://img.youtube.com/vi/q2FZk-pciWY/0.jpg)](https://www.youtube.com/watch?v=q2FZk-pciWY)
 
 <details>
   <summary>If you've cloned this repository locally, expand here to watch</summary>
